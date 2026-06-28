@@ -175,5 +175,5 @@ server {
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE).
-Free use, modification, and distribution are allowed for commercial purposes. For detailed terms, please refer to the LICENSE file.
+This project is licensed under the [GNU AGPLv3 (Affero General Public License v3.0)](./LICENSE).
+Anyone is free to view, modify, and distribute the source code. If you provide a service (including over a network) based on this software, you must publicly disclose the modified source code under the same AGPLv3 license. For detailed terms, please refer to the LICENSE file.
