@@ -480,7 +480,6 @@ def scan_library(db_path, library_id, physical_path, force=False):
                         conn.close()
                     except Exception:
                         pass
-                    import os
                     os._exit(0)
 
             except Exception as e:

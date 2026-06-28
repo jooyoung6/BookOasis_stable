@@ -156,3 +156,4 @@ tags: [workflow, history]
  | 2026-06-28 | `session_20260628_130941` | 마크다운 문서 이력 아카이빙 및 동기화 | [Task](./history/20260628_130941_session_20260628_130941_task.md) | [Walkthrough](./history/20260628_130941_session_20260628_130941_walkthrough.md) |
 | 2026-06-28 | `scanner_timeout` | 도서 스캔 중 쓰레드 행 및 Gunicorn 워커 타임아웃 오류 수정 | [Task](./history/20260628_173518_scanner_timeout_task.md) | [Walkthrough](./history/20260628_173518_scanner_timeout_walkthrough.md) |
 | 2026-06-28 | `scanner_timeout` | 도서 스캔 중 쓰레드 행 및 Gunicorn 워커 타임아웃 오류 수정 (대형 폴더 OOM 방지 보완) | [Task](./history/20260628_173818_scanner_timeout_task.md) | [Walkthrough](./history/20260628_173818_scanner_timeout_walkthrough.md) |
+| 2026-06-28 | `scanner_timeout` | 설치 가이드 문서에 SECRET_KEY 환경변수 설정 가이드 보완 | [Task](./history/20260628_174032_scanner_timeout_task.md) | [Walkthrough](./history/20260628_174032_scanner_timeout_walkthrough.md) |

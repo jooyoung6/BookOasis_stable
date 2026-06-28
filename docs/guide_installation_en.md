@@ -50,7 +50,16 @@ pip install -r requirements.txt
 ```
 
 ### ③ Environment Variables Setup (Optional)
+
 Complex settings that used to exist in the `.env` file (such as plugin activation, API keys, etc.) have been deprecated. In the latest architecture, you can safely configure and manage them directly in the DB through the Web UI's **[Settings > Plugin Settings]** tab after running the system. Therefore, you can skip creating an environment variables file and proceed directly to execution unless you have a specific reason.
+
+However, to **prevent the web login session from being cleared (maintaining logged-in status)** when Gunicorn worker processes restart due to memory threshold detection or system reboots, you must create a `.env` file at the project root and register a fixed secret key (`SECRET_KEY`).
+
+**.env Configuration Example:**
+```env
+# Fixed secret key to preserve user login sessions upon Gunicorn restarts
+SECRET_KEY=yoursupersecretfixedkey12345!
+```
 
 ---
 
