@@ -387,6 +387,9 @@ def scan_library(db_path, library_id, physical_path, force=False):
     print(f"[Scanner] 멀티스레드 스캔 풀 생성 (스레드 개수: {threads_to_use})")
     
     processed_folders_count = 0
+    uncommitted_count = 0
+    processed_books_count = 0
+
     with ThreadPoolExecutor(max_workers=threads_to_use) as executor:
         futures = {
             executor.submit(process_folder_task, root, files, force, db_meta_full, db_offsets_cached, is_remote, library_id): root
@@ -437,13 +440,24 @@ def scan_library(db_path, library_id, physical_path, force=False):
                                 save_book_offsets(cursor, book_id, filename, offsets_data)
 
                         if db_action_taken:
-                            conn.commit()
+                            uncommitted_count += 1
+                            processed_books_count += 1
+                            
+                            # 30권 단위 청크 중간 커밋 (SQLite 메모리 팽창 및 락 장기 점유 방지)
+                            if uncommitted_count >= 30:
+                                conn.commit()
+                                uncommitted_count = 0
+
+                            # 50권 단위 강제 메모리 해제
+                            if processed_books_count % 50 == 0:
+                                gc.collect()
 
                     # 메모리 방출 및 체크포인트 즉시 세이브
                     del res
                 
                 cursor.execute("INSERT OR IGNORE INTO scanner_progress (library_id, folder_path) VALUES (?, ?)", (str(library_id), root_folder))
                 conn.commit()
+                uncommitted_count = 0
                 
                 processed_folders_count += 1
                 if processed_folders_count % 10 == 0:
@@ -462,8 +476,12 @@ def scan_library(db_path, library_id, physical_path, force=False):
                 # 실시간 OOM 방지 자진 탈출 처리
                 if check_memory_exceeded():
                     print(f"[Scanner-Memory] 🛑 메모리 한계치 도달로 스캔을 긴급 일시중단합니다. (진행도: {processed_folders_count}개 폴더 반영완료)")
-                    conn.close()
-                    sys.exit(0)
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+                    import os
+                    os._exit(0)
 
             except Exception as e:
                 print(f"[Scanner-DEBUG-Pool] ❌ 폴더 '{root_folder}' 처리 중 예외 발생: {e}")

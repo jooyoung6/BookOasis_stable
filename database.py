@@ -385,6 +385,13 @@ def init_databases():
         except Exception as migration_err:
             print(f"[DB-Migration ERROR] libraries is_remote 자동 판별 보정 실패: {migration_err}")
 
+        # 서버 재시작 시 고착된(Stuck) 스캔 상태 초기화 방어코드
+        try:
+            cursor.execute("UPDATE libraries SET scan_status = 'ready' WHERE scan_status = 'scanning'")
+            conn.commit()
+        except Exception as reset_err:
+            print(f"[DB-Migration ERROR] 스캔 상태 초기화 실패: {reset_err}")
+
         conn.close()
 
 # DB 튜닝 진행 중 전역 상태 딕셔너리

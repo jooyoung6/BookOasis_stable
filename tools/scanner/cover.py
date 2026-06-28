@@ -100,8 +100,8 @@ def extract_epub_cover_direct(epub_path, dest_path):
                     img_data = zf.read(matched_name)
                     # Pillow를 통한 WebP 인코딩 저장
                     try:
-                        img = Image.open(io.BytesIO(img_data))
-                        img.save(dest_path, "WEBP", quality=80)
+                        with Image.open(io.BytesIO(img_data)) as img:
+                            img.save(dest_path, "WEBP", quality=80)
                     except Exception as e:
                         print(f"[Scanner-EPUB-Cover] WebP 인코딩 실패, 원본 바이너리 저장: {e}")
                         with open(dest_path, 'wb') as out_f:
@@ -338,8 +338,8 @@ def get_series_cover_fallback(series_name, folder_path, force=False, is_remote=F
                             
                             # Pillow를 통한 WebP 인코딩 저장
                             try:
-                                img = Image.open(io.BytesIO(img_data))
-                                img.save(local_cover_path, "WEBP", quality=80)
+                                with Image.open(io.BytesIO(img_data)) as img:
+                                    img.save(local_cover_path, "WEBP", quality=80)
                             except Exception as e:
                                 print(f"[Scanner-Cover-Auto] WebP 인코딩 실패, 원본 바이너리 저장: {e}")
                                 with open(local_cover_path, 'wb') as img_f:
