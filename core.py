@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 from utils.logger import setup_rotating_logger
 setup_rotating_logger()
