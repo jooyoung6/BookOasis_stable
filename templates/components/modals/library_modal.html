@@ -19,6 +19,10 @@
                 <input type="checkbox" id="library-form-remote" name="is_remote">
                 <label for="library-form-remote">원격 드라이브 (VFS 마운트 / rclone 등)</label>
             </div>
+            <div class="library-form-group" id="library-form-rclone-url-group" style="display: none; margin-top: 0.5rem;">
+                <label for="library-form-rclone-url">Rclone RC API 주소 (VFS 캐시 갱신용)</label>
+                <input type="text" id="library-form-rclone-url" name="rclone_rc_url" placeholder="예: http://localhost:5572">
+            </div>
             <div class="library-modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeLibraryModal()">취소</button>
                 <button type="submit" class="btn-submit" id="library-form-submit-btn">저장</button>

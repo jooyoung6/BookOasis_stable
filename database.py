@@ -228,7 +228,8 @@ def init_databases():
         last_scanned_at DATETIME DEFAULT NULL,
         scan_status TEXT DEFAULT 'ready',
         is_remote INTEGER DEFAULT 0,
-        vfs_refresh_before_scan INTEGER DEFAULT 0
+        vfs_refresh_before_scan INTEGER DEFAULT 0,
+        rclone_rc_url TEXT DEFAULT NULL
     );
 
     CREATE TABLE IF NOT EXISTS books (
@@ -349,7 +350,8 @@ def init_databases():
                 ('LAZY_SCAN_CRON', '0 3 * * *'),
                 ('SYSTEM_MEM_LIMIT', '1536.0'),
                 ('PROCESS_RSS_LIMIT', '2048.0'),
-                ('RECENT_BOOKS_LIMIT', '30')
+                ('RECENT_BOOKS_LIMIT', '30'),
+                ('RCLONE_RC_URL', 'http://localhost:5572')
             ]
             for k, v in default_settings:
                 cursor.execute("SELECT value FROM settings WHERE key = ?", (k,))

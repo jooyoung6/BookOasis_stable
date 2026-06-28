@@ -6,7 +6,7 @@ class CategoryService:
     def get_libraries(db_type):
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, physical_path, is_remote, vfs_refresh_before_scan FROM libraries ORDER BY name ASC")
+        cursor.execute("SELECT id, name, physical_path, is_remote, vfs_refresh_before_scan, rclone_rc_url FROM libraries ORDER BY name ASC")
         rows = cursor.fetchall()
         conn.close()
         return [{
@@ -14,7 +14,8 @@ class CategoryService:
             'name': r['name'], 
             'physical_path': r['physical_path'],
             'is_remote': r['is_remote'] or 0,
-            'vfs_refresh_before_scan': r['vfs_refresh_before_scan'] or 0
+            'vfs_refresh_before_scan': r['vfs_refresh_before_scan'] or 0,
+            'rclone_rc_url': r['rclone_rc_url'] or ''
         } for r in rows]
 
     @staticmethod
@@ -24,13 +25,13 @@ class CategoryService:
         return '\n'.join([line for line in lines if line])
 
     @staticmethod
-    def add_library(db_type, name, physical_path, is_remote=0):
+    def add_library(db_type, name, physical_path, is_remote=0, rclone_rc_url=None):
         physical_path = CategoryService._clean_physical_path(physical_path)
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO libraries (name, physical_path, is_remote) VALUES (?, ?, ?)",
-            (name, physical_path, is_remote)
+            "INSERT INTO libraries (name, physical_path, is_remote, rclone_rc_url) VALUES (?, ?, ?, ?)",
+            (name, physical_path, is_remote, rclone_rc_url)
         )
         library_id = cursor.lastrowid
         conn.commit()
@@ -38,13 +39,13 @@ class CategoryService:
         return library_id
 
     @staticmethod
-    def edit_library(db_type, library_id, name, physical_path, is_remote=0):
+    def edit_library(db_type, library_id, name, physical_path, is_remote=0, rclone_rc_url=None):
         physical_path = CategoryService._clean_physical_path(physical_path)
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
         cursor.execute(
-            "UPDATE libraries SET name = ?, physical_path = ?, is_remote = ? WHERE id = ?",
-            (name, physical_path, is_remote, library_id)
+            "UPDATE libraries SET name = ?, physical_path = ?, is_remote = ?, rclone_rc_url = ? WHERE id = ?",
+            (name, physical_path, is_remote, rclone_rc_url, library_id)
         )
         conn.commit()
         conn.close()

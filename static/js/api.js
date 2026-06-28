@@ -139,11 +139,12 @@ export async function cancelLibraryScan(type, libraryId) {
   return res.json();
 }
 
-export async function updateLibrarySchedule(type, libraryId, cronSchedule, vfsRefresh = 'false') {
+export async function updateLibrarySchedule(type, libraryId, cronSchedule, vfsRefresh = 'false', rcloneRcUrl = '') {
   const formData = new FormData();
   formData.append('type', type);
   formData.append('cron_schedule', cronSchedule);
   formData.append('vfs_refresh_before_scan', vfsRefresh);
+  formData.append('rclone_rc_url', rcloneRcUrl);
   const res = await fetch(`/api/media/libraries/${libraryId}/schedule`, {
     method: 'POST',
     body: formData

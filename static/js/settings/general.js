@@ -68,6 +68,9 @@ export async function loadGeneralSettings() {
       const recentBooksEl = document.getElementById('setting-recent-books-limit');
       if (recentBooksEl) recentBooksEl.value = s.RECENT_BOOKS_LIMIT || '30';
 
+      const rcloneRcUrlEl = document.getElementById('setting-rclone-rc-url');
+      if (rcloneRcUrlEl) rcloneRcUrlEl.value = s.RCLONE_RC_URL || 'http://localhost:5572';
+
       const sysMemEl = document.getElementById('setting-system-mem-limit');
       if (sysMemEl) sysMemEl.value = s.SYSTEM_MEM_LIMIT || '1536';
 
@@ -117,7 +120,7 @@ export async function submitGeneralSettings(event) {
   const procRss = document.getElementById('setting-process-rss-limit')?.value || '2048';
   const comicDelay = document.getElementById('setting-comic-loading-delay')?.value || '300';
   const hideCompleted = document.getElementById('setting-hide-completed-in-history')?.checked ? '1' : '0';
-  const proxyAuth = document.getElementById('setting-proxy-header-auth')?.value || '0';
+  const rcloneRcUrl = document.getElementById('setting-rclone-rc-url')?.value || 'http://localhost:5572';
   
   try {
     // 모든 설정을 병렬 업데이트
@@ -133,7 +136,8 @@ export async function submitGeneralSettings(event) {
       api.updateSystemSetting('SYSTEM_MEM_LIMIT', sysMem),
       api.updateSystemSetting('PROCESS_RSS_LIMIT', procRss),
       api.updateSystemSetting('HIDE_COMPLETED_IN_HISTORY', hideCompleted),
-      api.updateSystemSetting('PROXY_HEADER_AUTH', proxyAuth)
+      api.updateSystemSetting('PROXY_HEADER_AUTH', proxyAuth),
+      api.updateSystemSetting('RCLONE_RC_URL', rcloneRcUrl)
     ];
     
     const results = await Promise.all(promises);

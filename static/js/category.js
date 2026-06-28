@@ -55,7 +55,7 @@ export async function loadLibraries() {
         data.libraries.forEach(lib => {
           const isActive = String(state.currentLibraryId) === String(lib.id) ? 'active' : '';
           const draggableAttr = !isPinned ? 'draggable="true"' : '';
-          html += `<li class="menu-item ${isActive}" data-type="custom" data-id="${lib.id}" data-name="${lib.name}" data-path="${lib.physical_path || ''}" data-remote="${lib.is_remote || 0}" ${draggableAttr} onclick="selectCategory('${lib.id}')"><i class="fa-solid fa-book"></i> ${lib.name}</li>`;
+          html += `<li class="menu-item ${isActive}" data-type="custom" data-id="${lib.id}" data-name="${lib.name}" data-path="${lib.physical_path || ''}" data-remote="${lib.is_remote || 0}" data-rclone-url="${lib.rclone_rc_url || ''}" ${draggableAttr} onclick="selectCategory('${lib.id}')"><i class="fa-solid fa-book"></i> ${lib.name}</li>`;
         });
       }
       sidebar.innerHTML = html;
@@ -220,6 +220,21 @@ export function triggerAddLibrary() {
   document.getElementById('library-form-id').value = '';
   const remoteEl = document.getElementById('library-form-remote');
   if (remoteEl) remoteEl.checked = false;
+
+  // Rclone RC URL 초기화 및 숨김
+  const rcloneUrlEl = document.getElementById('library-form-rclone-url');
+  if (rcloneUrlEl) rcloneUrlEl.value = '';
+  const rcloneGroup = document.getElementById('library-form-rclone-url-group');
+  if (rcloneGroup) rcloneGroup.style.display = 'none';
+
+  // 체크박스 변경 감지 바인딩 (최초 1회)
+  if (remoteEl && !remoteEl.dataset.listenerBound) {
+    remoteEl.dataset.listenerBound = 'true';
+    remoteEl.addEventListener('change', (e) => {
+      if (rcloneGroup) rcloneGroup.style.display = e.target.checked ? 'block' : 'none';
+    });
+  }
+
   title.innerText = '새 카테고리 추가';
   modal.style.display = 'flex';
 }
@@ -245,6 +260,24 @@ export async function triggerEditLibrary() {
   const isRemoteVal = document.querySelector(`[data-id="${id}"]`).dataset.remote || '0';
   const remoteEl = document.getElementById('library-form-remote');
   if (remoteEl) remoteEl.checked = (isRemoteVal === '1');
+
+  // Rclone RC URL 바인딩 및 표시 토글
+  const rcloneUrlVal = document.querySelector(`[data-id="${id}"]`).dataset.rcloneUrl || '';
+  const rcloneUrlEl = document.getElementById('library-form-rclone-url');
+  if (rcloneUrlEl) rcloneUrlEl.value = rcloneUrlVal;
+
+  const rcloneGroup = document.getElementById('library-form-rclone-url-group');
+  if (rcloneGroup) {
+    rcloneGroup.style.display = (isRemoteVal === '1') ? 'block' : 'none';
+  }
+
+  // 체크박스 변경 감지 바인딩 (최초 1회)
+  if (remoteEl && !remoteEl.dataset.listenerBound) {
+    remoteEl.dataset.listenerBound = 'true';
+    remoteEl.addEventListener('change', (e) => {
+      if (rcloneGroup) rcloneGroup.style.display = e.target.checked ? 'block' : 'none';
+    });
+  }
 
   title.innerText = `카테고리 수정 (ID: ${id})`;
   modal.style.display = 'flex';

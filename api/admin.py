@@ -44,8 +44,9 @@ def add_media_library():
         error_msg = '다음 경로들이 서버에 존재하지 않거나 오타가 있습니다:\n' + '\n'.join(invalid_paths)
         return jsonify({'success': False, 'error': error_msg}), 400
 
+    rclone_rc_url = request.form.get('rclone_rc_url', '').strip() or None
     try:
-        library_id = CategoryService.add_library(db_type, name, physical_path, is_remote)
+        library_id = CategoryService.add_library(db_type, name, physical_path, is_remote, rclone_rc_url)
     except sqlite3.IntegrityError:
         return jsonify({'success': False, 'error': '이미 존재하는 라이브러리 이름입니다.'}), 400
     except Exception as e:
@@ -94,8 +95,9 @@ def edit_media_library():
         error_msg = '다음 경로들이 서버에 존재하지 않거나 오타가 있습니다:\n' + '\n'.join(invalid_paths)
         return jsonify({'success': False, 'error': error_msg}), 400
 
+    rclone_rc_url = request.form.get('rclone_rc_url', '').strip() or None
     try:
-        CategoryService.edit_library(db_type, int(library_id), name, physical_path, is_remote)
+        CategoryService.edit_library(db_type, int(library_id), name, physical_path, is_remote, rclone_rc_url)
     except sqlite3.IntegrityError:
         return jsonify({'success': False, 'error': '이미 존재하는 라이브러리 이름입니다.'}), 400
     except Exception as e:
@@ -154,7 +156,7 @@ def get_libraries_schedules():
     try:
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, physical_path, cron_schedule, last_scanned_at, scan_status, is_remote, vfs_refresh_before_scan FROM libraries ORDER BY name ASC")
+        cursor.execute("SELECT id, name, physical_path, cron_schedule, last_scanned_at, scan_status, is_remote, vfs_refresh_before_scan, rclone_rc_url FROM libraries ORDER BY name ASC")
         rows = cursor.fetchall()
         conn.close()
         
@@ -168,7 +170,8 @@ def get_libraries_schedules():
                 'last_scanned_at': r['last_scanned_at'] or '-',
                 'scan_status': r['scan_status'] or 'ready',
                 'is_remote': r['is_remote'] or 0,
-                'vfs_refresh_before_scan': r['vfs_refresh_before_scan'] or 0
+                'vfs_refresh_before_scan': r['vfs_refresh_before_scan'] or 0,
+                'rclone_rc_url': r['rclone_rc_url'] or ''
             })
         return jsonify({'success': True, 'libraries': libraries})
     except Exception as e:
@@ -256,6 +259,7 @@ def update_library_schedule(library_id):
     db_type = request.form.get('type', 'general')
     cron_schedule = request.form.get('cron_schedule', '').strip()
     vfs_refresh_val = request.form.get('vfs_refresh_before_scan')
+    rclone_rc_url = request.form.get('rclone_rc_url', '').strip() or None
     
     if len(cron_schedule) > 50:
         return jsonify({'success': False, 'error': '크론 표현식은 50자를 초과할 수 없습니다.'}), 400
@@ -274,7 +278,7 @@ def update_library_schedule(library_id):
     try:
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
-        cursor.execute("UPDATE libraries SET cron_schedule = ?, vfs_refresh_before_scan = ? WHERE id = ?", (cron_val, vfs_refresh, library_id))
+        cursor.execute("UPDATE libraries SET cron_schedule = ?, vfs_refresh_before_scan = ?, rclone_rc_url = ? WHERE id = ?", (cron_val, vfs_refresh, rclone_rc_url, library_id))
         
         cursor.execute("SELECT physical_path FROM libraries WHERE id = ?", (library_id,))
         row = cursor.fetchone()

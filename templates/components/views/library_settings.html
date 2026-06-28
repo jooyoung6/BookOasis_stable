@@ -34,6 +34,7 @@
                                 <tr style="background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid rgba(255,255,255,0.08); color: #94a3b8;">
                                     <th style="padding: 1rem;">카테고리명</th>
                                     <th style="padding: 1rem;">서버 물리 경로</th>
+                                    <th style="padding: 1rem; width: 230px;">Rclone RC 주소</th>
                                     <th style="padding: 1rem; width: 220px;">스케줄 주기 (Cron식)</th>
                                     <th style="padding: 1rem; width: 180px;">최근 스캔 시각</th>
                                     <th style="padding: 1rem; width: 100px; text-align: center;">상태</th>
@@ -122,6 +123,15 @@
                                     <option value="0">로그 출력 감추기 (운영 권장 / 용량 절약 모드)</option>
                                 </select>
                                 <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.4rem 0 0 0;">스캐너 백그라운드 구동 시 생성되는 로그의 상세 출력 방식을 정의합니다. 비활성화 시 로그 생성 부하와 파일 크기가 극적으로 줄어듭니다.</p>
+                            </div>
+
+                            <!-- 6-1. rclone 원격 제어(RC) 주소 설정 -->
+                            <div class="library-form-group" style="margin-bottom: 0.5rem;">
+                                <label for="setting-rclone-rc-url" style="font-weight: 700; color: #fff; font-size: 0.9rem; margin-bottom: 0.4rem; display: block;">
+                                    <i class="fa-solid fa-network-wired" style="color: #a855f7; margin-right: 0.3rem;"></i> rclone 원격 제어(RC) API 주소
+                                </label>
+                                <input type="text" id="setting-rclone-rc-url" name="RCLONE_RC_URL" value="http://localhost:5572" style="width: 100%; max-width: 480px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; padding: 0.6rem 0.8rem; border-radius: 6px; outline: none;">
+                                <p style="font-size: 0.78rem; color: #94a3b8; margin: 0.4rem 0 0 0;">구글 드라이브 마운트 캐시 갱신을 위해 스캐너가 접근할 rclone RC 서버 주소입니다. 쉼표(,)로 구분하여 복수의 주소를 등록할 수 있습니다. (예: <code>http://localhost:5572, http://localhost:5573</code>)</p>
                             </div>
 
                             <!-- 7. 만화 뷰어 로딩 지연 시간 설정 (LocalStorage) -->
