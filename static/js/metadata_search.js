@@ -165,53 +165,84 @@ async function selectMetadataBook(book, source) {
   
   import('./view_manager.js').then(async (vm) => {
     vm.showToast('도서 정보 적용 중...', 'info');
+    console.log('[MetadataApply-DEBUG] 1단계 시작: applyMetadata 호출 준비', {
+      libraryType: state.currentLibraryType,
+      bookId: currentTargetBookId,
+      source: source,
+      bookData: book
+    });
     try {
       // 1단계: 첫 번째 책에 플러그인 메타데이터 적용
       const res = await api.applyMetadata(state.currentLibraryType, currentTargetBookId, book, source);
+      console.log('[MetadataApply-DEBUG] 1단계 결과 (applyMetadata):', res);
+      
       if (res.success) {
         if (isSeriesMode && currentSeriesName) {
-          // 2단계: 시리즈 모드일 경우 첫 번째 책에 저장된 정보를 기반으로 시리즈 전체 전파
-          // (별도의 백엔드 전파 API를 호출하는 대신, 기존 editMediaDetail API를 재활용하여 텍스트 및 다운로드된 썸네일 경로를 일괄 전파)
+          console.log('[MetadataApply-DEBUG] 2단계 시작: 시리즈 전파 모드 활성화됨 (isSeriesMode: true)', {
+            currentSeriesName: currentSeriesName,
+            libraryIdState: state.currentLibraryId
+          });
+          
+          let targetBook = null;
           
           // 다운로드 완료된 표지 파일명을 획득하기 위해 우선 타겟 도서 상세 재조회
-          // 다운로드 완료된 표지 파일명을 획득하기 위해 우선 타겟 도서 상세 재조회
+          console.log('[MetadataApply-DEBUG] 2.1단계: fetchMediaDetail 호출', {
+            libraryId: state.currentLibraryId,
+            seriesName: currentSeriesName
+          });
           const detailRes = await api.fetchMediaDetail(state.currentLibraryType, state.currentLibraryId, currentSeriesName);
+          console.log('[MetadataApply-DEBUG] 2.1단계 결과 (fetchMediaDetail):', detailRes);
+          
           if (detailRes.success) {
-            const firstBook = detailRes.books[0];
-            const updatedMeta = detailRes.meta;
+            console.log('[MetadataApply-DEBUG] 2.2단계: books 리스트에서 targetBook 탐색 시작', {
+              targetId: currentTargetBookId,
+              booksCount: detailRes.books ? detailRes.books.length : 0
+            });
+            targetBook = detailRes.books ? detailRes.books.find(b => b.id === currentTargetBookId) : null;
+            console.log('[MetadataApply-DEBUG] 2.2단계 targetBook 탐색 완료:', targetBook);
             
-            const formData = new FormData();
-            formData.append('type', state.currentLibraryType);
-            formData.append('series', currentSeriesName);
-            formData.append('author', updatedMeta.author || book.author);
-            formData.append('publisher', updatedMeta.publisher || book.publisher);
-            formData.append('summary', updatedMeta.summary || book.description);
-            formData.append('link', updatedMeta.link || book.link || '');
-            
-            // 만약 플러그인에 의해 책 커버가 다운로드되었다면, 시리즈 대표 이미지로 복사 전파
-            // (백엔드 BookDetailService.update_media_detail에서 cover_file 유무에 따른 JPG 저장을 처리함)
-            if (firstBook && firstBook.cover_image) {
-              // file_path를 fetch하여 blob으로 변환하거나, 백엔드에서 복사할 수 있도록 설계
-              // 여기서는 다운로드받은 첫 번째 책의 cover_image 경로를 서버측에서 인지하고
-              // 시리즈 대표 이미지(series_{hash}.jpg)로 자동 복원 및 복사하는 복사 전파 API가 유용함.
-              // 백엔드의 copy_metadata가 이를 완벽히 처리하므로, copy_metadata API를 호출합니다.
+            // 플러그인에 의해 도서 메타데이터가 적용되었으므로, 해당 책의 정보를 기반으로 시리즈 내 모든 도서에 텍스트 메타를 복사 전파합니다.
+            if (targetBook) {
+              const actualLibraryId = targetBook.library_id || state.currentLibraryId;
+              console.log('[MetadataApply-DEBUG] 2.3단계: copyMetadata 호출 준비', {
+                targetSeriesName: currentSeriesName,
+                actualLibraryId: actualLibraryId,
+                sourceBookId: currentTargetBookId
+              });
+              
               const copyFormData = new FormData();
               copyFormData.append('type', state.currentLibraryType);
               copyFormData.append('target_series', currentSeriesName);
-              copyFormData.append('target_library_id', state.currentLibraryId);
+              copyFormData.append('target_library_id', actualLibraryId);
               copyFormData.append('source_book_id', currentTargetBookId);
               
-              await api.copyMetadata(copyFormData);
+              const copyRes = await api.copyMetadata(copyFormData);
+              console.log('[MetadataApply-DEBUG] 2.3단계 결과 (copyMetadata):', copyRes);
+            } else {
+              console.warn('[MetadataApply-DEBUG] [경고] targetBook을 찾지 못해 copyMetadata를 호출하지 못했습니다. targetId:', currentTargetBookId);
             }
+          } else {
+            console.error('[MetadataApply-DEBUG] [에러] fetchMediaDetail 실패. 전파 실패.');
           }
+          
+          // closeMetadataSearchModal() 실행 시 전역변수 currentSeriesName이 null로 비워지기 때문에 임시 로컬 변수에 백업해 둡니다.
+          const seriesNameToRefresh = currentSeriesName;
           
           vm.showToast('시리즈 메타데이터가 일괄 적용되었습니다.', 'success');
           closeMetadataSearchModal();
+          
+          const activeLibId = (targetBook && targetBook.library_id) ? targetBook.library_id : state.currentLibraryId;
+          console.log('[MetadataApply-DEBUG] 3단계: openBookDetail 호출하여 화면 갱신 시도', {
+            currentSeriesName: seriesNameToRefresh,
+            activeLibId: activeLibId
+          });
           if (typeof window.openBookDetail === 'function') {
-            const activeLibId = (history.state && history.state.libraryId) ? history.state.libraryId : state.currentLibraryId;
-            window.openBookDetail(null, currentSeriesName, activeLibId);
+            window.openBookDetail(null, seriesNameToRefresh, activeLibId);
+          } else {
+            console.error('[MetadataApply-DEBUG] [에러] window.openBookDetail 함수가 정의되어 있지 않습니다.');
           }
         } else {
+          console.log('[MetadataApply-DEBUG] 단권/그리드 모드로 완료 처리');
           vm.showToast(res.message, 'success');
           closeMetadataSearchModal();
           
@@ -219,6 +250,12 @@ async function selectMetadataBook(book, source) {
           const isDetailActive = history.state && history.state.view === 'detail';
           const activeSeries = history.state ? history.state.series : null;
           const activeLibId = (history.state && history.state.libraryId) ? history.state.libraryId : state.currentLibraryId;
+          
+          console.log('[MetadataApply-DEBUG] 단권 갱신 openBookDetail 호출 정보', {
+            isDetailActive: isDetailActive,
+            activeSeries: activeSeries,
+            activeLibId: activeLibId
+          });
           
           if (isDetailActive && activeSeries && typeof window.openBookDetail === 'function') {
             window.openBookDetail(null, activeSeries, activeLibId);
@@ -228,10 +265,11 @@ async function selectMetadataBook(book, source) {
           }
         }
       } else {
+        console.error('[MetadataApply-DEBUG] [에러] res.success가 false입니다.', res.error);
         vm.showToast(`적용 실패: ${res.error}`, 'error');
       }
     } catch (err) {
-      console.error('메타데이터 적용 API 에러:', err);
+      console.error('[MetadataApply-DEBUG] [예외 발생] 메타데이터 적용 API 에러:', err);
       vm.showToast('서버 통신 중 오류가 발생했습니다.', 'error');
     }
   });

@@ -5,6 +5,8 @@ import urllib.request
 import urllib.parse
 import hashlib
 import database
+from PIL import Image
+import io
 from plugins.metadata.base import BaseMetadataProvider
 
 class AladinMetadataProvider(BaseMetadataProvider):
@@ -178,7 +180,7 @@ class AladinMetadataProvider(BaseMetadataProvider):
                     # 파일명 중복을 방지하기 위해 파일 전체 경로의 MD5 해시를 고유 키로 활용
                     filename = os.path.basename(file_path)
                     book_hash = hashlib.md5(filename.encode('utf-8')).hexdigest()
-                    cover_filename = f"book_{book_hash}.png"
+                    cover_filename = f"book_{book_hash}.webp"
                     dest_path = os.path.join(covers_dir, cover_filename)
                     
                     # User-Agent를 차단하는 일부 네트워크 환경 대비 헤더 정의
@@ -188,8 +190,13 @@ class AladinMetadataProvider(BaseMetadataProvider):
                     )
                     with urllib.request.urlopen(req, timeout=10) as response:
                         img_data = response.read()
-                        with open(dest_path, 'wb') as img_f:
-                            img_f.write(img_data)
+                        try:
+                            with Image.open(io.BytesIO(img_data)) as img:
+                                img.save(dest_path, "WEBP", quality=80)
+                        except Exception as e:
+                            print(f"[AladinMetadataProvider] WebP 인코딩 실패, 원본 바이너리 저장: {e}")
+                            with open(dest_path, 'wb') as img_f:
+                                img_f.write(img_data)
                     print(f"[AladinMetadataProvider] 알라딘 커버 이미지 다운로드 완료: {cover_url} -> {dest_path}")
                     
                     # DB에 저장할 상대적 경로 명칭 구성 ({library_id}/book_{hash}.png)
