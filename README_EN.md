@@ -48,6 +48,7 @@ For detailed environment configuration and installation methods, please refer to
 
 * Installation Guide: [Setup Guide (docs/guide_installation_en.md)](./docs/guide_installation_en.md)
 * Admin and Settings: [Admin Guide (docs/guide_admin_en.md)](./docs/guide_admin_en.md)
+* Mobile Viewer Integration: [OPDS Integration Guide (docs/guide_opds_en.md)](./docs/guide_opds_en.md)
 * Wiki Portal: [Wiki Home (docs/index.md)](./docs/index.md)
 
 ### Easy Operation (Docker)

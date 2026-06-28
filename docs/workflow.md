@@ -140,8 +140,6 @@ tags: [workflow, history]
 | 2026-06-23 | `remote_path_cover_pages` | 원격 경로(GDRIVE) 도서 커버·페이지 수 누락 + 상세 화면 경고 배너 및 재스캔 버튼 구현 | [Bugfix](./bug/20260623_bugfix_remote_path_cover_pages.md) | - |
 | 2026-06-25 | `opds_and_ui_enhancements` | OPDS 뷰어 통합 기능 확대(신규 추가·최근 읽은 섹션, 시리즈 썸네일) 및 웹 UI 상태 관리 개선 | [Task](./history/20260625_024244_opds_and_ui_enhancements_task.md) | [Walkthrough](./history/20260625_024244_opds_and_ui_enhancements_walkthrough.md) |
 | 2026-06-25 | `opds_recently_read_title_corruption_fix` | OPDS 최근 읽은 도서 제목 손상 오류 수정 (파일명 기반 제목 추출) | [Task](./history/20260625_025530_opds_recently_read_title_corruption_fix_task.md) | [Walkthrough](./history/20260625_025530_opds_recently_read_title_corruption_fix_walkthrough.md) |
-
-
 | 2026-06-25 | `scanner_offset_fix` | Lazy 스캐너 오프셋 미수집 버그 수정 및 메인 스캐너 오프셋 전용 고속 경로 추가 | [Task](./history/20260625_104855_scanner_offset_fix_task.md) | [Walkthrough](./history/20260625_104855_scanner_offset_fix_walkthrough.md) |
 | 2026-06-28 | `genre_tag_refactoring` | 장르/태그 DB 및 필터링 기능 구현, JS 모듈화 리팩토링, 독립 바닐라 랜딩 웹사이트 개발 | [Task](./history/20260628_003542_genre_tag_refactoring_task.md) | [Walkthrough](./history/20260628_003542_genre_tag_refactoring_walkthrough.md) |
 | 2026-06-28 | `genre_tag_refactoring` | 장르/태그 스크롤 제거 및 플로팅 컨텍스트 메뉴로 개편 | [Task](./history/20260628_011848_genre_tag_refactoring_task.md) | [Walkthrough](./history/20260628_011848_genre_tag_refactoring_walkthrough.md) |
@@ -152,9 +150,7 @@ tags: [workflow, history]
 | 2026-06-28 | `genre_tag_removal` | 장르/태그 필터 기능 및 관련 UI/모달 소스 완전 제거 | [Task](./history/20260628_013036_genre_tag_removal_task.md) | [Walkthrough](./history/20260628_013036_genre_tag_removal_walkthrough.md) |
 | 2026-06-28 | `session_20260628_102936` | 마크다운 문서 이력 아카이빙 및 동기화 | [Task](./history/20260628_102936_session_20260628_102936_task.md) | [Walkthrough](./history/20260628_102936_session_20260628_102936_walkthrough.md) |
 | 2026-06-28 | `sort_by_date` | 도서 정렬 날짜 기준 필터링 및 정렬 기능 개선 | [Improvement](./bug/20260628_improvement_sort_by_date.md) | - |
-
 | 2026-06-28 | `proxy_header_auth` | 프록시 헤더 기반 SSO 자동 로그인 인증 기능 추가 | [Improvement](./bug/20260628_improvement_proxy_header_auth.md) | - |
-
 | 2026-06-28 | `session_20260628_130941` | 마크다운 문서 이력 아카이빙 및 동기화 | [Task](./history/20260628_130941_session_20260628_130941_task.md) | [Walkthrough](./history/20260628_130941_session_20260628_130941_walkthrough.md) |
 | 2026-06-28 | `scanner_timeout` | 도서 스캔 중 쓰레드 행 및 Gunicorn 워커 타임아웃 오류 수정 | [Task](./history/20260628_173518_scanner_timeout_task.md) | [Walkthrough](./history/20260628_173518_scanner_timeout_walkthrough.md) |
 | 2026-06-28 | `scanner_timeout` | 도서 스캔 중 쓰레드 행 및 Gunicorn 워커 타임아웃 오류 수정 (대형 폴더 OOM 방지 보완) | [Task](./history/20260628_173818_scanner_timeout_task.md) | [Walkthrough](./history/20260628_173818_scanner_timeout_walkthrough.md) |
@@ -174,3 +170,4 @@ tags: [workflow, history]
 | 2026-06-29 | `metadata_close_modal_name_loss` | 모달 닫기 시 전역 변수 초기화로 인한 시리즈 갱신 오류 수정 | [Task](./history/20260629_015653_metadata_close_modal_name_loss_task.md) | [Walkthrough](./history/20260629_015653_metadata_close_modal_name_loss_walkthrough.md) |
 | 2026-06-29 | `identity_logo_replace` | BookOasis 브랜드 아이덴티티 신규 로고 및 파비콘 교체 적용 | [Task](./history/20260629_020517_identity_logo_replace_task.md) | [Walkthrough](./history/20260629_020517_identity_logo_replace_walkthrough.md) |
 | 2026-06-29 | `logo_neon_glow_remove` | 브랜드 로고 이미지 뒷면 네온 발광 효과(drop-shadow) 필터 전량 제거 | [Task](./history/20260629_020643_logo_neon_glow_remove_task.md) | [Walkthrough](./history/20260629_020643_logo_neon_glow_remove_walkthrough.md) |
+| 2026-06-29 | `opds_guide` | OPDS 모바일 리더 연동 안내 가이드 추가 및 readme.md 링크 보완 | [Task](./history/20260629_022104_opds_guide_task.md) | [Walkthrough](./history/20260629_022104_opds_guide_walkthrough.md) |

@@ -49,6 +49,7 @@
 
 * 설치 안내: [설치 가이드 (docs/guide_installation.md)](./docs/guide_installation.md)
 * 관리 및 관리자 설정: [관리자 가이드 (docs/guide_admin.md)](./docs/guide_admin.md)
+* 모바일 뷰어 연동: [OPDS 연동 가이드 (docs/guide_opds.md)](./docs/guide_opds.md)
 * 위키 포털: [기술 위키 홈 (docs/index.md)](./docs/index.md)
 
 ### 간편 구동 (Docker)
