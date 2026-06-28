@@ -171,3 +171,5 @@ tags: [workflow, history]
 | 2026-06-29 | `identity_logo_replace` | BookOasis 브랜드 아이덴티티 신규 로고 및 파비콘 교체 적용 | [Task](./history/20260629_020517_identity_logo_replace_task.md) | [Walkthrough](./history/20260629_020517_identity_logo_replace_walkthrough.md) |
 | 2026-06-29 | `logo_neon_glow_remove` | 브랜드 로고 이미지 뒷면 네온 발광 효과(drop-shadow) 필터 전량 제거 | [Task](./history/20260629_020643_logo_neon_glow_remove_task.md) | [Walkthrough](./history/20260629_020643_logo_neon_glow_remove_walkthrough.md) |
 | 2026-06-29 | `opds_guide` | OPDS 모바일 리더 연동 안내 가이드 추가 및 readme.md 링크 보완 | [Task](./history/20260629_022104_opds_guide_task.md) | [Walkthrough](./history/20260629_022104_opds_guide_walkthrough.md) |
+| 2026-06-29 | `architecture_guides` | 레이어별 아키텍처 및 소스 구조 설명서(국/영문) 가이드 제작 및 연동 | [Task](./history/20260629_022713_architecture_guides_task.md) | [Walkthrough](./history/20260629_022713_architecture_guides_walkthrough.md) |
+| 2026-06-29 | `plugin_guides` | 메타데이터 플러그인 개발 가이드(국/영문) 제작 및 readme 연동 | [Task](./history/20260629_023229_plugin_guides_task.md) | [Walkthrough](./history/20260629_023229_plugin_guides_walkthrough.md) |
