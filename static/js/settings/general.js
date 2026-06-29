@@ -57,7 +57,7 @@ export async function loadGeneralSettings() {
       if (fontFamilyEl) fontFamilyEl.value = s.VIEWER_FONT_FAMILY || 'sans-serif';
       
       const dbPoolSizeEl = document.getElementById('setting-db-pool-size');
-      if (dbPoolSizeEl) dbPoolSizeEl.value = s.DB_POOL_SIZE || '5';
+      if (dbPoolSizeEl) dbPoolSizeEl.value = s.DB_POOL_SIZE || '10';
       
       const scannerLogEl = document.getElementById('setting-scanner-write-log');
       if (scannerLogEl) scannerLogEl.value = s.SCANNER_WRITE_LOG || '1';

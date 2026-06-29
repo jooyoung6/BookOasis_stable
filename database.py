@@ -131,7 +131,7 @@ def _get_pool_size_raw():
             if row:
                 conn.close()
                 val = int(row[0])
-                return max(1, min(20, val))
+                return max(1, min(30, val))
         conn.close()
     except Exception:
         pass
@@ -346,7 +346,7 @@ def init_databases():
                 ('PAGE_LIMIT', '60'),
                 ('VIEWER_FONT_SIZE', '18'),
                 ('VIEWER_FONT_FAMILY', 'sans-serif'),
-                ('DB_POOL_SIZE', '5'),
+                ('DB_POOL_SIZE', '10'),
                 ('SCANNER_WRITE_LOG', '1'),
                 ('LAZY_SCAN_CRON', '0 3 * * *'),
                 ('SYSTEM_MEM_LIMIT', '1536.0'),

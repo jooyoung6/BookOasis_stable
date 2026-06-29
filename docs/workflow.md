@@ -180,3 +180,5 @@ tags: [workflow, history]
 | 2026-06-29 | `has_offsets_column_missing` | books 테이블 스키마 내 has_offsets 컬럼 누락으로 인한 스캔 실패 조치 | [Task](./history/20260629_121804_has_offsets_column_missing_task.md) | [Walkthrough](./history/20260629_121804_has_offsets_column_missing_walkthrough.md) |
 | 2026-06-29 | `general_settings_proxy_auth_ref_error` | 일반 환경설정 저장 시 proxyAuth 정의 누락으로 인한 ReferenceError 버그 수정 | [Bugfix](./bug/20260629_bugfix_proxy_auth_reference_error.md) | - |
 | 2026-06-29 | `session_20260629_131956` | 마크다운 문서 이력 아카이빙 및 동기화 | [Task](./history/20260629_131956_session_20260629_131956_task.md) | [Walkthrough](./history/20260629_131956_session_20260629_131956_walkthrough.md) |
+| 2026-06-29 | `db_pool_exhausted` | 스캔 중 미디어 조회 시 DB 커넥션 풀 고갈 버그 조치 | [Bugfix](./bug/20260629_bugfix_db_pool_exhausted.md) | - |
+| 2026-06-29 | `db_pool_exhausted` | 스캔 중 미디어 조회 시 DB 커넥션 풀 고갈 버그 조치 | [Task](./history/20260629_180114_db_pool_exhausted_task.md) | [Walkthrough](./history/20260629_180114_db_pool_exhausted_walkthrough.md) |
