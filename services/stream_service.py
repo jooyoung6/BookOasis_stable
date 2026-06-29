@@ -43,6 +43,7 @@ class StreamService:
 
             # ── [Fast Path] Zip 오프셋 기반 부분 스트리밍 가속 기동 ──
             if book_id is not None:
+                conn = None
                 try:
                     conn = database.get_connection(db_type)
                     cursor = conn.cursor()
@@ -52,7 +53,6 @@ class StreamService:
                         WHERE book_id = ? AND page_idx = ?
                     """, (book_id, page_idx))
                     row = cursor.fetchone()
-                    conn.close()
 
                     if row and os.path.exists(file_path):
                         local_header_offset = row['local_header_offset']
@@ -91,6 +91,9 @@ class StreamService:
                                     return result
                 except Exception as ex_offset:
                     print(f"[Offset-SpeedRun FAIL] {os.path.basename(file_path)} [{page_idx}]: {ex_offset} (Fallback 구동)")
+                finally:
+                    if conn:
+                        conn.close()
 
             # ── [Fallback Path] 오프셋 조회 불가 또는 실패 시 기존 전체 복사/Seek 캐시 엔진 사용 ──
             # print(f"[Offset-Fallback] 기존 로더 구동: {os.path.basename(file_path)}")
@@ -180,9 +183,13 @@ class StreamService:
 
     @staticmethod
     def get_file_path(db_type, book_id):
-        conn = database.get_connection(db_type)
-        cursor = conn.cursor()
-        cursor.execute("SELECT file_path FROM books WHERE id=?", (book_id,))
-        row = cursor.fetchone()
-        conn.close()
-        return row['file_path'] if row else None
+        conn = None
+        try:
+            conn = database.get_connection(db_type)
+            cursor = conn.cursor()
+            cursor.execute("SELECT file_path FROM books WHERE id=?", (book_id,))
+            row = cursor.fetchone()
+            return row['file_path'] if row else None
+        finally:
+            if conn:
+                conn.close()
