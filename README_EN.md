@@ -36,6 +36,17 @@ The server provides a light and fast runtime environment by minimizing third-par
   * It supports the OPDS standard for integration with external viewer applications.
   * It applies Basic Authentication security processing based on database authentication information.
 
+### 🎨 Behind the Scenes: BookOasis Scan Engines
+
+Here is the secret of how BookOasis handles massive libraries (100k+ books) instantly without UI freezing!
+
+![BookOasis Scanner Architecture](./docs/images/engine_webcomic_en.png)
+
+* **High-Speed Scanner**: Without extracting files, it quickly reads minimal zip header offsets to extract book metadata and seed the database.
+* **Lazy Engine**: Large and complex comic ZIP files are deferred and processed asynchronously in the background, preventing main interface freezes.
+
+---
+
 ### Dashboard Screen
 
 ![BookOasis Dashboard](./docs/screenshot.png)
