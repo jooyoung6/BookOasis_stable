@@ -94,6 +94,8 @@ window.triggerSearchAladinMetadataAction = triggerSearchMetadataAction;
 
 export { triggerSearchMetadataAction as triggerSearchAladinMetadataAction };
 
+window.showBookContextMenu = showBookContextMenu;
+
 // 도서 우클릭 메뉴 클릭 이외 시 닫기 핸들러 추가
 document.addEventListener('click', () => {
   const bookMenu = document.getElementById('book-context-menu');

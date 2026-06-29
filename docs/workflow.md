@@ -182,3 +182,5 @@ tags: [workflow, history]
 | 2026-06-29 | `session_20260629_131956` | 마크다운 문서 이력 아카이빙 및 동기화 | [Task](./history/20260629_131956_session_20260629_131956_task.md) | [Walkthrough](./history/20260629_131956_session_20260629_131956_walkthrough.md) |
 | 2026-06-29 | `db_pool_exhausted` | 스캔 중 미디어 조회 시 DB 커넥션 풀 고갈 버그 조치 | [Bugfix](./bug/20260629_bugfix_db_pool_exhausted.md) | - |
 | 2026-06-29 | `db_pool_exhausted` | 스캔 중 미디어 조회 시 DB 커넥션 풀 고갈 버그 조치 | [Task](./history/20260629_180114_db_pool_exhausted_task.md) | [Walkthrough](./history/20260629_180114_db_pool_exhausted_walkthrough.md) |
+| 2026-06-29 | `viewer_zero_page_and_context_menu_error` | 스캔 중 0페이지 만화책 로드 오류 및 우클릭 컨텍스트 메뉴 미동작 수정 | [Bugfix](./bug/20260629_bugfix_viewer_zero_page_and_context_menu_error.md) | - |
+| 2026-06-29 | `viewer_zero_page_and_context_menu_error` | 스캔 중 0페이지 만화책 로드 오류 및 우클릭 컨텍스트 메뉴 미동작 수정 | [Task](./history/20260629_181417_viewer_zero_page_and_context_menu_error_task.md) | [Walkthrough](./history/20260629_181417_viewer_zero_page_and_context_menu_error_walkthrough.md) |

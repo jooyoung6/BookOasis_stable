@@ -120,11 +120,23 @@ class BookDetailService:
                 filename_with_ext = os.path.basename(b['file_path'])
                 clean_title, _ = os.path.splitext(filename_with_ext)
                 
+            total_pages = b['total_pages'] or 0
+            file_format = (b['file_format'] or '').lower()
+            if total_pages == 0 and file_format in ('zip', 'cbz') and b['file_path'] and os.path.exists(b['file_path']):
+                try:
+                    from utils.cache_helper import get_zip_file_hybrid
+                    zf = get_zip_file_hybrid(b['file_path'])
+                    if zf:
+                        img_ext = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
+                        total_pages = len([n for n in zf.namelist() if n.lower().endswith(img_ext)])
+                except Exception as e_page:
+                    print(f"[BookDetailService] total_pages Fallback 계산 실패: {e_page}")
+
             books_list.append({
                 'id'          : b['id'],
                 'title'       : clean_title,
                 'file_format' : b['file_format'],
-                'total_pages' : b['total_pages'],
+                'total_pages' : total_pages,
                 'has_offsets' : b['has_offsets'] or 0,
                 'cover_image' : get_cover_image_with_t(b['cover_image'], b['cover_updated_at']),
                 'file_path'   : b['file_path'] or '',

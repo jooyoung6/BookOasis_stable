@@ -167,7 +167,7 @@ export function renderVolumesList(books, safeSeriesName, actualLibraryId) {
     ` : '';
 
     volumesHtml += `
-      <div class="volume-card" oncontextmenu="event.preventDefault(); event.stopPropagation(); if (typeof window.showBookContextMenu === 'function') window.showBookContextMenu(event.clientX, event.clientY, ${b.id}, '${(b.title || '').replace(/'/g, "\\'")}',' true);">
+      <div class="volume-card" oncontextmenu="event.preventDefault(); event.stopPropagation(); if (typeof window.showBookContextMenu === 'function') window.showBookContextMenu(event.clientX, event.clientY, ${b.id}, '${(b.title || '').replace(/'/g, "\\'")}', true);">
         <img class="volume-thumb" src="${volCoverSrc}" alt="cover"
              onerror="this.onerror=null; this.src='/static/images/default_cover.jpg';">
         <div class="volume-info">

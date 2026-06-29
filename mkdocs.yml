@@ -30,6 +30,8 @@ nav:
 - 개발 워크플로우: workflow.md
 - 작업 히스토리:
   - history/index.md
+  - history/20260629_181417_viewer_zero_page_and_context_menu_error_walkthrough.md
+  - history/20260629_181417_viewer_zero_page_and_context_menu_error_task.md
   - history/20260629_180114_db_pool_exhausted_walkthrough.md
   - history/20260629_180114_db_pool_exhausted_task.md
   - history/20260629_131956_session_20260629_131956_walkthrough.md
@@ -399,6 +401,7 @@ nav:
   - bug/20260629_improvement_metadata_debug_logs.md
   - bug/20260629_improvement_logo_neon_glow_remove.md
   - bug/20260629_improvement_identity_logo_replace.md
+  - bug/20260629_bugfix_viewer_zero_page_and_context_menu_error.md
   - bug/20260629_bugfix_scheduler_rc_url_select_miss.md
   - bug/20260629_bugfix_pyyaml_docker_entry.md
   - bug/20260629_bugfix_proxy_auth_reference_error.md
