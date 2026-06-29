@@ -124,8 +124,8 @@ class DiskCacheManager:
 
             files = []
             for name in os.listdir(self.cache_dir):
-                # 복사 완료를 뜻하는 .done 파일은 제외하고 실제 zip 파일만 검사
-                if name.endswith('.done'):
+                # 복사 완료를 뜻하는 .done 파일 및 현재 복사 중인 .tmp 임시 파일은 제외하고 실제 zip 파일만 검사
+                if name.endswith('.done') or name.endswith('.tmp'):
                     continue
                 fpath = os.path.join(self.cache_dir, name)
                 if os.path.isfile(fpath):
