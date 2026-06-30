@@ -95,7 +95,7 @@ function bindDragAndDropEvents(isEnabled) {
       if (target && target !== dragSrcEl) {
         const rect = target.getBoundingClientRect();
         const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
-        sidebar.insertBefore(dragSrcEl, next ? target.nextSibling : target);
+        sidebar.insertBefore(dragSrcEl, next ? target.nextElementSibling : target);
       }
     });
 
