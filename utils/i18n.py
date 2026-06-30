@@ -23,7 +23,7 @@ def _load_translations():
             _translations[lang] = {}
     _loaded = True
 
-def get_text(key, lang=None, **kwargs):
+def get_text(translation_key, lang=None, **kwargs):
     """
     Retrieve translation string.
     If lang is not provided, defaults to request cookie 'bookoasis_lang'.
@@ -42,7 +42,7 @@ def get_text(key, lang=None, **kwargs):
     lang_dict = _translations.get(lang, _translations.get('ko', {}))
     
     # key structure: "category.key"
-    keys = key.split('.')
+    keys = translation_key.split('.')
     val = lang_dict
     for k in keys:
         if isinstance(val, dict):
@@ -52,7 +52,7 @@ def get_text(key, lang=None, **kwargs):
             break
             
     if val is None:
-        return key
+        return translation_key
 
     if kwargs:
         try:

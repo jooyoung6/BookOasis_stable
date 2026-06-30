@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.5.2
+### Changed
+- 환경설정 저장시 오류 수정 | Fix in settings save error
+
+---
+
+
 ## v0.5.1
 ### Changed
 - library_settings.html 모듈화 | library_settings.html modularization
