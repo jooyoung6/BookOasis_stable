@@ -221,13 +221,101 @@ function updatePageInfo() {
 
   const overlayTitleEl = document.getElementById('overlay-title-text');
   if (overlayTitleEl) overlayTitleEl.textContent = document.getElementById('viewer-title-text').textContent;
+
+  // 시크바 thumb 위치 동기화
+  syncSeekBar();
 }
+
+// ─────────────────────────────────────────────────────────────
+// 📌 페이지 시크바 (Seek Bar) 관련 함수
+// ─────────────────────────────────────────────────────────────
+
+let _seekbarInited = false; // 이벤트 중복 등록 방지 플래그
+
+/**
+ * 시크바 초기화: 총 페이지 수를 슬라이더 max에 반영하고
+ * input/change 이벤트를 1회만 등록합니다.
+ */
+export function initSeekBar() {
+  const slider = document.getElementById('comic-page-slider');
+  const endLabel = document.getElementById('seekbar-end-label');
+  if (!slider) return;
+
+  // 총 페이지 수 반영
+  slider.max = comicTotalPages || 1;
+  slider.value = comicCurrentPage + 1;
+  if (endLabel) endLabel.textContent = comicTotalPages || '?';
+
+  if (_seekbarInited) return;
+  _seekbarInited = true;
+
+  // 드래그 중: 툴팁만 업데이트 (실제 이미지 로딩 없음)
+  slider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value, 10);
+    showSeekbarTooltip(slider, val);
+    const badge = document.getElementById('comic-overlay-page-info');
+    if (badge) badge.textContent = `${val} / ${comicTotalPages}`;
+  });
+
+  // 드래그 완료: 실제 페이지 로딩
+  slider.addEventListener('change', (e) => {
+    hideSeekbarTooltip();
+    comicCurrentPage = parseInt(e.target.value, 10) - 1;
+    loadComicPage();
+  });
+}
+
+/**
+ * 현재 페이지에 맞게 슬라이더 thumb 위치를 동기화합니다.
+ */
+function syncSeekBar() {
+  const slider = document.getElementById('comic-page-slider');
+  if (!slider) return;
+  slider.max = comicTotalPages || 1;
+  slider.value = comicCurrentPage + 1;
+  const endLabel = document.getElementById('seekbar-end-label');
+  if (endLabel) endLabel.textContent = comicTotalPages || '?';
+}
+
+/**
+ * 슬라이더 thumb 위치 기반으로 툴팁 X좌표를 계산하여 표시합니다.
+ * @param {HTMLInputElement} slider
+ * @param {number} page - 현재 선택된 페이지 번호 (1-indexed)
+ */
+function showSeekbarTooltip(slider, page) {
+  const tooltip = document.getElementById('seekbar-tooltip');
+  if (!tooltip) return;
+
+  const min = parseInt(slider.min, 10) || 1;
+  const max = parseInt(slider.max, 10) || 1;
+  const ratio = (page - min) / (max - min || 1);
+  const trackWidth = slider.offsetWidth;
+  const thumbHalf = 9; // thumb 반지름(px)
+  const leftPx = thumbHalf + ratio * (trackWidth - thumbHalf * 2);
+
+  tooltip.textContent = page;
+  tooltip.style.left = `${leftPx}px`;
+  tooltip.classList.add('visible');
+}
+
+/**
+ * 툴팁을 숨깁니다.
+ */
+function hideSeekbarTooltip() {
+  const tooltip = document.getElementById('seekbar-tooltip');
+  if (tooltip) tooltip.classList.remove('visible');
+}
+
+// ─────────────────────────────────────────────────────────────
 
 // Kavita 스타일 오버레이 메뉴 토글
 export function toggleComicOverlay() {
   const menu = document.getElementById('comic-overlay-menu');
   if (!menu) return;
-  menu.style.display = (menu.style.display === 'none') ? 'flex' : 'none';
+  const isOpening = (menu.style.display === 'none');
+  menu.style.display = isOpening ? 'flex' : 'none';
+  // 메뉴가 열릴 때 시크바를 현재 페이지에 맞게 동기화
+  if (isOpening) syncSeekBar();
 }
 
 // 처음부터 보기
@@ -235,6 +323,15 @@ export function jumpToFirstPage() {
   comicCurrentPage = 0;
   loadComicPage();
   toggleComicOverlay();
+}
+
+// 마지막 페이지로 이동
+export function jumpToLastPage() {
+  if (comicTotalPages > 0) {
+    comicCurrentPage = comicTotalPages - 1;
+    loadComicPage();
+    toggleComicOverlay();
+  }
 }
 
 // 읽음 완료 처리 (진척도를 마지막 페이지로 강제 세팅)

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## v0.5.5
+### Changed
+- 만화뷰어에 페이지 이동용 슬라이드 추가 | Add slide bar for page navigation in comic viewer
+
+---
+
+
 ## v0.5.4
 ### Changed
 - 단일인덱스를 복합 인덱스 변경 적용 | Apply complex index instead of single index

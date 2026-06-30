@@ -1,6 +1,6 @@
 // viewer.js – 미디어 뷰어 라이프사이클 및 단축키 코어 조율기
 import { state } from './state.js';
-import { initComicViewer, nextComicPage, prevComicPage, setComicFitMode, toggleComicOverlay, jumpToFirstPage, markAsCompleted } from './viewer_comic.js';
+import { initComicViewer, nextComicPage, prevComicPage, setComicFitMode, toggleComicOverlay, jumpToFirstPage, jumpToLastPage, markAsCompleted, initSeekBar } from './viewer_comic.js';
 import { initTxtViewer, prevTxtPage, nextTxtPage, applyTxtSettings } from './viewer_txt.js';
 import { initPdfViewer, nextPdfPage, prevPdfPage, clearPdfViewer } from './viewer_pdf.js';
 import { initEpubViewer, clearEpubViewer, epubPrevPage, epubNextPage, applyEpubSettings, changeEpubScrollMode } from './viewer_epub.js';
@@ -98,7 +98,9 @@ export function openReader(bookId, format, title, pagesRead, totalPages) {
   const fmt = format.toLowerCase();
   if (fmt === 'zip' || fmt === 'cbz') {
     if (overlayComicFit) overlayComicFit.style.display = 'flex';
-    initComicViewer(bookId, pagesRead, totalPages);
+    initComicViewer(bookId, pagesRead, totalPages).then(() => {
+      initSeekBar();
+    });
   } else if (fmt === 'txt') {
     if (overlayTxtControls) overlayTxtControls.style.display = 'flex';
     document.getElementById('comic-overlay-page-info').textContent = i18n.t('viewer.view_text') || '텍스트 보기';
@@ -361,9 +363,10 @@ window.setScrollMode = function(mode) {
 window.prevPage = prevPage;
 window.nextPage = nextPage;
 window.toggleTheme = toggleReaderTheme;
+window.jumpToLastPage = jumpToLastPage;
 
 // 최초 로드 시 사용자 폰트 사전 로딩
 loadCustomFontsList();
 
 // 글로벌 핸들러 노출에 사용될 함수 재내보내기 (Re-export)
-export { toggleComicOverlay, jumpToFirstPage, markAsCompleted, setComicFitMode, nextComicPage, prevComicPage, nextPdfPage, prevPdfPage, epubPrevPage, epubNextPage, prevTxtPage, nextTxtPage };
+export { toggleComicOverlay, jumpToFirstPage, jumpToLastPage, markAsCompleted, setComicFitMode, nextComicPage, prevComicPage, nextPdfPage, prevPdfPage, epubPrevPage, epubNextPage, prevTxtPage, nextTxtPage, initSeekBar };

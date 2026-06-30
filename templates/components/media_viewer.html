@@ -79,7 +79,41 @@
                 </div>
             </div>
             <div class="overlay-footer">
-                <span id="comic-overlay-page-info">1 / 1</span>
+                <!-- 시크바 네비게이션 행 -->
+                <div class="seekbar-nav-row">
+                    <!-- 첫 페이지 이동 버튼 -->
+                    <button class="seekbar-btn" id="seekbar-btn-first" onclick="jumpToFirstPage()" data-i18n-title="viewer.from_beginning" title="처음으로">
+                        <i class="fa-solid fa-backward-step"></i>
+                    </button>
+
+                    <!-- 슬라이더 + 레이블 영역 -->
+                    <div class="seekbar-track-wrap">
+                        <span class="seekbar-page-num" id="seekbar-start-label">1</span>
+                        <div class="seekbar-slider-container">
+                            <!-- 드래그 중 페이지 팝업 툴팁 -->
+                            <div class="seekbar-tooltip" id="seekbar-tooltip">1</div>
+                            <input
+                                type="range"
+                                id="comic-page-slider"
+                                min="1"
+                                max="1"
+                                value="1"
+                                class="seekbar-input"
+                            >
+                        </div>
+                        <span class="seekbar-page-num" id="seekbar-end-label">1</span>
+                    </div>
+
+                    <!-- 마지막 페이지 이동 버튼 -->
+                    <button class="seekbar-btn" id="seekbar-btn-last" onclick="jumpToLastPage()" data-i18n-title="viewer.to_last_page" title="마지막으로">
+                        <i class="fa-solid fa-forward-step"></i>
+                    </button>
+                </div>
+
+                <!-- 현재 페이지 뱃지 -->
+                <div class="seekbar-current-badge">
+                    <span id="comic-overlay-page-info">1 / 1</span>
+                </div>
             </div>
         </div>
 
