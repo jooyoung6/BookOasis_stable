@@ -3,6 +3,19 @@ import { state } from './state.js';
 import * as api from './api.js';
 import { selectCategory } from './tab_media_library.js';
 
+/**
+ * HTML 속성값에 삽입될 문자열의 특수문자를 이스케이프합니다.
+ * 사용자가 카테고리 이름에 큰따옴표, 꺾쇠 등을 입력해도 DOM이 깨지지 않습니다.
+ */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 let currentTargetLibrary = null; // 우클릭 대상 저장
 
 // 0. 라이브러리(카테고리) 목록 로드 및 사이드바 렌더링
@@ -55,7 +68,11 @@ export async function loadLibraries() {
         data.libraries.forEach(lib => {
           const isActive = String(state.currentLibraryId) === String(lib.id) ? 'active' : '';
           const draggableAttr = !isPinned ? 'draggable="true"' : '';
-          html += `<li class="menu-item ${isActive}" data-type="custom" data-id="${lib.id}" data-name="${lib.name}" data-path="${lib.physical_path || ''}" data-remote="${lib.is_remote || 0}" data-rclone-url="${lib.rclone_rc_url || ''}" ${draggableAttr} onclick="selectCategory('${lib.id}')"><i class="fa-solid fa-book"></i> ${lib.name}</li>`;
+          // HTML 속성값에 사용될 문자열 이스케이프 (큰따옴표, 꺾쇠 등 특수문자 방어)
+          const safeName    = escapeHtml(lib.name || '');
+          const safePath    = escapeHtml(lib.physical_path || '');
+          const safeRclone  = escapeHtml(lib.rclone_rc_url || '');
+          html += `<li class="menu-item ${isActive}" data-type="custom" data-id="${lib.id}" data-name="${safeName}" data-path="${safePath}" data-remote="${lib.is_remote || 0}" data-rclone-url="${safeRclone}" ${draggableAttr} onclick="selectCategory('${lib.id}')"><i class="fa-solid fa-book"></i> ${safeName}</li>`;
         });
       }
       sidebar.innerHTML = html;

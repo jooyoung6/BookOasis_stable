@@ -3,9 +3,10 @@
 ## v0.5.5
 ### Changed
 - 만화뷰어에 페이지 이동용 슬라이드 추가 | Add slide bar for page navigation in comic viewer
+- 플러그인 활성화/비활성화 미적용 개선 | Plugin enable/disable apply improvement
+- 정렬 기능 저장 | Sort function save
 
 ---
-
 
 ## v0.5.4
 ### Changed

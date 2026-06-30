@@ -18,7 +18,7 @@ export const state = {
   isLoading: false,
   LIMIT: 120,
   searchQuery: '',
-  currentSortDirection: 'asc', // 기본값: 오름차순 (가나다 순)
+  currentSortDirection: localStorage.getItem('library_sort_direction') || 'asc', // 로컬 캐시 연동 (기본값: 오름차순)
   
   // 시스템 전역 설정
   systemSettings: {},

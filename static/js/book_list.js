@@ -213,6 +213,21 @@ export function filterBooks() {
   }
 }
 
+export function updateSortButtonUI() {
+  const btn = document.getElementById('btn-lib-sort');
+  if (!btn) return;
+  const currentSort = state.currentSortDirection || 'asc';
+  if (currentSort === 'asc') {
+    btn.innerHTML = `<i class="fa-solid fa-sort-alpha-down"></i> ${i18n.t('book_list.sort_asc')}`;
+  } else if (currentSort === 'desc') {
+    btn.innerHTML = `<i class="fa-solid fa-sort-alpha-up"></i> ${i18n.t('book_list.sort_desc')}`;
+  } else if (currentSort === 'date_desc') {
+    btn.innerHTML = `<i class="fa-solid fa-sort-numeric-down-alt"></i> ${i18n.t('book_list.sort_date_desc')}`;
+  } else if (currentSort === 'date_asc') {
+    btn.innerHTML = `<i class="fa-solid fa-sort-numeric-up"></i> ${i18n.t('book_list.sort_date_asc')}`;
+  }
+}
+
 export function toggleLibrarySort() {
   const btn = document.getElementById('btn-lib-sort');
   if (!btn) return;
@@ -226,16 +241,9 @@ export function toggleLibrarySort() {
 
   const newSort = cycle[state.currentSortDirection] || 'asc';
   state.currentSortDirection = newSort;
+  localStorage.setItem('library_sort_direction', newSort);
 
-  if (newSort === 'asc') {
-    btn.innerHTML = `<i class="fa-solid fa-sort-alpha-down"></i> ${i18n.t('book_list.sort_asc')}`;
-  } else if (newSort === 'desc') {
-    btn.innerHTML = `<i class="fa-solid fa-sort-alpha-up"></i> ${i18n.t('book_list.sort_desc')}`;
-  } else if (newSort === 'date_desc') {
-    btn.innerHTML = `<i class="fa-solid fa-sort-numeric-down-alt"></i> ${i18n.t('book_list.sort_date_desc')}`;
-  } else if (newSort === 'date_asc') {
-    btn.innerHTML = `<i class="fa-solid fa-sort-numeric-up"></i> ${i18n.t('book_list.sort_date_asc')}`;
-  }
+  updateSortButtonUI();
 
   // 서버 요청 없이 로컬 상태 정렬 후 리렌더링
   state.currentPage = 1;

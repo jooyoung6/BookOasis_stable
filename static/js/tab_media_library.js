@@ -19,7 +19,7 @@ import { showBookContextMenu, triggerScanSingleBookAction, triggerSearchAladinMe
 import { openMetadataSearchModal, closeMetadataSearchModal, performMetadataSearch } from './metadata_search.js';
 
 // book_list.js 모듈로부터 도서 목록 제어부 임포트
-import { loadBooksList, loadReadingHistory, filterBooks, toggleLibrarySort, resumeSeries } from './book_list.js';
+import { loadBooksList, loadReadingHistory, filterBooks, toggleLibrarySort, resumeSeries, updateSortButtonUI } from './book_list.js';
 
 // settings_tab.js 모듈로부터 환경설정 제어부 임포트
 import { switchSettingsTab, loadInitialSystemSettings, loadGeneralSettings, submitGeneralSettings, initReportsTab, loadReportList, loadReportDetail } from './settings_tab.js';
@@ -53,6 +53,7 @@ function initTabMediaLibrary() {
   state.currentLibraryId = 'home';
   loadLibraries();
   selectCategory('home');
+  updateSortButtonUI();
 
   // 플로팅 필터 모달 초기화
   initFloatingFilter();

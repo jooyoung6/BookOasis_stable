@@ -491,8 +491,13 @@ def get_aladin_new_releases_api():
     limit = int(request.args.get('limit', 10))
     
     try:
-        from plugins.metadata.aladin_new import Aladin_newMetadataProvider
-        provider = Aladin_newMetadataProvider()
+        from services.metadata_factory import MetadataFactory
+        try:
+            # MetadataFactory를 통해 활성화 여부 검증 (비활성화 시 ValueError 발생)
+            provider = MetadataFactory.get_provider_by_id('aladin_new')
+        except ValueError as ve:
+            return jsonify({'success': False, 'error': str(ve)}), 400
+
         result = provider.get_new_releases(db_type, limit=limit)
         
         status_code = 200 if result.get('success') else 400

@@ -26,6 +26,12 @@ class CategoryService:
 
     @staticmethod
     def add_library(db_type, name, physical_path, is_remote=0, rclone_rc_url=None):
+        # 이름 방어 로직: 양끝 공백 제거, 빈 이름 거부, 최대 100자 제한
+        name = str(name or '').strip()
+        if not name:
+            raise ValueError('카테고리 이름은 비워둘 수 없습니다.')
+        if len(name) > 25:
+            raise ValueError('카테고리 이름은 25자를 초과할 수 없습니다.')
         physical_path = CategoryService._clean_physical_path(physical_path)
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
@@ -40,6 +46,12 @@ class CategoryService:
 
     @staticmethod
     def edit_library(db_type, library_id, name, physical_path, is_remote=0, rclone_rc_url=None):
+        # 이름 방어 로직: 양끝 공백 제거, 빈 이름 거부, 최대 25자 제한
+        name = str(name or '').strip()
+        if not name:
+            raise ValueError('카테고리 이름은 비워둘 수 없습니다.')
+        if len(name) > 25:
+            raise ValueError('카테고리 이름은 25자를 초과할 수 없습니다.')
         physical_path = CategoryService._clean_physical_path(physical_path)
         conn = database.get_connection(db_type)
         cursor = conn.cursor()
