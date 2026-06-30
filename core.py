@@ -5,7 +5,7 @@ load_dotenv()
 from utils.logger import setup_rotating_logger
 setup_rotating_logger()
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 from database import init_databases
 from api import api_bp
 from api.auth import login_required
@@ -30,6 +30,13 @@ def add_fingerprint_headers(response):
     response.headers['X-Powered-By'] = 'BookOasis Engine'
     response.headers['X-BookOasis-Version'] = '1.0'
     response.headers['X-BookOasis-License'] = 'AGPLv3'
+    # 폰트, 이미지 및 외부 라이브러리(lib) 등 거의 변경되지 않는 리소스만 브라우저 강제 캐싱 적용
+    # 커스텀 CSS/JS 파일들은 즉각적인 업데이트 반영을 위해 캐싱에서 제외
+    is_cacheable_path = request.path.startswith('/static/lib/') or request.path.startswith('/static/fonts/')
+    is_cacheable_ext = any(request.path.endswith(ext) for ext in ['.woff', '.woff2', '.ttf', '.eot', '.png', '.jpg', '.jpeg', '.svg', '.ico'])
+    if request.path.startswith('/static/') and (is_cacheable_path or is_cacheable_ext):
+        response.cache_control.max_age = 31536000
+        response.cache_control.public = True
     return response
 
 # 앱 기동 시 DB 초기화 수행
