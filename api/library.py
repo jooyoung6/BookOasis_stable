@@ -5,9 +5,11 @@ from services.series_service import SeriesService
 from services.book_detail_service import BookDetailService
 from services.metadata_service import MetadataService
 from services.reading_history_service import ReadingHistoryService
+from services.library_service import LibraryService
+from services.book_info_service import BookInfoService
+from services.plugin_service import PluginService
 from api.auth import login_required, check_adult_permission, admin_required
 from utils.i18n import _t
-import database
 
 library_bp = Blueprint('media_library', __name__)
 
@@ -123,26 +125,8 @@ def get_media_tags():
     library_id = request.args.get('library_id')
     
     try:
-        conn = database.get_connection(db_type)
-        cursor = conn.cursor()
-        
-        if library_id and library_id not in ('all', 'favorite', 'history', 'home'):
-            cursor.execute("SELECT DISTINCT tags FROM books WHERE library_id = ? AND tags IS NOT NULL AND tags != ''", (library_id,))
-        else:
-            cursor.execute("SELECT DISTINCT tags FROM books WHERE tags IS NOT NULL AND tags != ''")
-            
-        rows = cursor.fetchall()
-        conn.close()
-        
-        unique_tags = set()
-        for r in rows:
-            if r[0]:
-                for t in r[0].split(','):
-                    t_clean = t.strip()
-                    if t_clean:
-                        unique_tags.add(t_clean)
-                        
-        return jsonify({'success': True, 'tags': sorted(list(unique_tags))})
+        tags = LibraryService.get_media_tags(db_type, library_id)
+        return jsonify({'success': True, 'tags': tags})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -156,26 +140,8 @@ def get_media_genres():
     library_id = request.args.get('library_id')
     
     try:
-        conn = database.get_connection(db_type)
-        cursor = conn.cursor()
-        
-        if library_id and library_id not in ('all', 'favorite', 'history', 'home'):
-            cursor.execute("SELECT DISTINCT genre FROM books WHERE library_id = ? AND genre IS NOT NULL AND genre != ''", (library_id,))
-        else:
-            cursor.execute("SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre != ''")
-            
-        rows = cursor.fetchall()
-        conn.close()
-        
-        unique_genres = set()
-        for r in rows:
-            if r[0]:
-                for g in r[0].split(','):
-                    g_clean = g.strip()
-                    if g_clean:
-                        unique_genres.add(g_clean)
-                        
-        return jsonify({'success': True, 'genres': sorted(list(unique_genres))})
+        genres = LibraryService.get_media_genres(db_type, library_id)
+        return jsonify({'success': True, 'genres': genres})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -275,53 +241,9 @@ def get_book_info(book_id):
         return jsonify({'success': False, 'error': _t('api.err_no_adult_access')}), 403
     
     try:
-        import os
-        from database import get_connection
-        conn = get_connection(db_type)
-        cursor = conn.cursor()
-        cursor.execute("SELECT total_pages, file_path, file_format FROM books WHERE id = ?", (book_id,))
-        row = cursor.fetchone()
-        conn.close()
-        
-        if not row:
+        total_pages = BookInfoService.get_total_pages(db_type, book_id)
+        if total_pages is None:
             return jsonify({'success': False, 'error': 'Book not found'}), 404
-            
-        total_pages = row['total_pages'] or 0
-        file_format = (row['file_format'] or '').lower()
-        
-        # 실시간 페이지 계산 (Viewer 진입 시에만 1권 단위로 수행하여 병목 방지)
-        if total_pages == 0 and file_format in ('zip', 'cbz'):
-            file_path = row['file_path']
-            if file_path and os.path.exists(file_path):
-                from utils.cache_helper import get_zip_file_hybrid
-                zf = get_zip_file_hybrid(file_path)
-                if zf:
-                    img_ext = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp')
-                    total_pages = len([n for n in zf.namelist() if n.lower().endswith(img_ext)])
-                    
-                    # DB 갱신
-                    if total_pages > 0:
-                        conn2 = get_connection(db_type)
-                        conn2.execute("UPDATE books SET total_pages = ? WHERE id = ?", (total_pages, book_id))
-                        conn2.commit()
-                        conn2.close()
-        elif total_pages == 0 and file_format == 'pdf':
-            file_path = row['file_path']
-            if file_path and os.path.exists(file_path):
-                try:
-                    import fitz
-                    doc = fitz.open(file_path)
-                    total_pages = doc.page_count
-                    doc.close()
-                    
-                    if total_pages > 0:
-                        conn2 = get_connection(db_type)
-                        conn2.execute("UPDATE books SET total_pages = ? WHERE id = ?", (total_pages, book_id))
-                        conn2.commit()
-                        conn2.close()
-                except Exception as pdf_err:
-                    print(f"[BookInfo API] PDF 렌더링 실패: {pdf_err}")
-
         return jsonify({'success': True, 'total_pages': total_pages})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -438,13 +360,9 @@ def toggle_metadata_plugin_api():
         return jsonify({'success': False, 'error': _t('api.err_plugin_id_missing')}), 400
         
     try:
-        conn = database.get_connection(db_type)
-        cursor = conn.cursor()
-        key = f"PLUGIN_ENABLED_{plugin_id}"
-        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, enabled_val))
-        conn.commit()
-        conn.close()
-        
+        success, error = PluginService.toggle_plugin_enabled(db_type, plugin_id, enabled_val)
+        if not success:
+            return jsonify({'success': False, 'error': error}), 400
         status_txt = _t('api.status_enabled') if enabled_val == '1' else _t('api.status_disabled')
         return jsonify({'success': True, 'message': _t('api.msg_plugin_status_updated', plugin_id=plugin_id, status_txt=status_txt)})
     except Exception as e:
@@ -465,21 +383,9 @@ def save_metadata_plugin_config_api():
         return jsonify({'success': False, 'error': _t('api.err_config_data_missing')}), 400
         
     try:
-        import json
-        if not isinstance(config_data, str):
-            config_str = json.dumps(config_data)
-        else:
-            config_str = config_data
-            
-        json.loads(config_str)
-        
-        conn = database.get_connection(db_type)
-        cursor = conn.cursor()
-        key = f"PLUGIN_CONFIG_{plugin_id}"
-        cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, config_str))
-        conn.commit()
-        conn.close()
-        
+        success, error = PluginService.save_plugin_config(db_type, plugin_id, config_data)
+        if not success:
+            return jsonify({'success': False, 'error': error}), 400
         return jsonify({'success': True, 'message': _t('api.msg_plugin_config_saved', plugin_id=plugin_id)})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

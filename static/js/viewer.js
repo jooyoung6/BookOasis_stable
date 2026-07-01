@@ -95,6 +95,18 @@ export function openReader(bookId, format, title, pagesRead, totalPages) {
     if (btnScroll) btnScroll.classList.add('active');
   }
 
+  // 너비 슬라이더 행: 스크롤 모드일 때만 표시 (뷰어 열기 시 초기화)
+  const widthRow = document.getElementById('overlay-width-row');
+  if (widthRow) widthRow.classList.toggle('visible', scrollMode === 'scroll');
+
+  // 저장된 스크롤 너비 복원 (CSS 변수 및 슬라이더 UI)
+  const savedScrollWidth = parseInt(localStorage.getItem('comic_scroll_width'), 10) || 800;
+  const widthSlider = document.getElementById('comic-scroll-width-slider');
+  const widthLabel  = document.getElementById('comic-scroll-width-label');
+  if (widthSlider) widthSlider.value = savedScrollWidth;
+  if (widthLabel)  widthLabel.textContent = `${savedScrollWidth}px`;
+  // CSS 변수는 comic-image-wrapper가 생성된 후 applyScrollWidth()에서 적용됨
+
   const fmt = format.toLowerCase();
   state.currentViewerFormat = fmt;
   if (fmt === 'zip' || fmt === 'cbz') {
@@ -357,16 +369,26 @@ window.setScrollMode = function(mode) {
     if (btnPage) btnPage.classList.remove('active');
     if (btnScroll) btnScroll.classList.add('active');
   }
+
+  // 너비 슬라이더 행: 스크롤 모드일 때만 표시
+  const widthRow = document.getElementById('overlay-width-row');
+  if (widthRow) {
+    widthRow.classList.toggle('visible', mode === 'scroll');
+  }
   
   // 만화책 뷰어가 활성화되어 있는 경우, 스크롤 모드를 적용하여 다시 렌더링
   if (document.getElementById('comic-viewer-container').style.display !== 'none') {
-    import('./viewer_comic.js').then(m => {
-      if (mode === 'scroll') {
-        m.setComicPageStep(1);
+    const mod = import('./viewer_comic.js');
+    mod.then(m => {
+      const setStep = m.setComicPageStep || m.setComicPageStep;
+      if (mode === 'scroll' && typeof setStep === 'function') {
+        setStep(1);
       }
-      m.applyComicFitMode();
-      m.loadComicPage();
-    });
+      const apply = m.applyComicFitMode || m.setComicFitMode || (window && window.setComicFitMode);
+      if (typeof apply === 'function') apply();
+      const load = m.loadComicPage || m.loadComicPage;
+      if (typeof load === 'function') load();
+    }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_comic:', err));
   }
   
   applyTxtSettings();
@@ -390,9 +412,15 @@ function initViewerSeekBar() {
     const fmt = state.currentViewerFormat;
     
     if (fmt === 'zip' || fmt === 'cbz') {
-      import('./viewer_comic.js').then(m => m.comicSliderInput(slider, val));
+      import('./viewer_comic.js').then(m => {
+        const fn = m.comicSliderInput || m.comicSliderInput || (window && window.comicSliderInput);
+        if (typeof fn === 'function') fn(slider, val); else console.warn('[Viewer-Core] comicSliderInput not available');
+      }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_comic:', err));
     } else if (fmt === 'epub') {
-      import('./viewer_epub.js').then(m => m.epubSliderInput(slider, val));
+      import('./viewer_epub.js').then(m => {
+        const fn = m.epubSliderInput || (window && window.epubSliderInput);
+        if (typeof fn === 'function') fn(slider, val); else console.warn('[Viewer-Core] epubSliderInput not available');
+      }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_epub:', err));
     }
   });
 
@@ -401,9 +429,15 @@ function initViewerSeekBar() {
     const fmt = state.currentViewerFormat;
     
     if (fmt === 'zip' || fmt === 'cbz') {
-      import('./viewer_comic.js').then(m => m.comicSliderChange(slider, val));
+      import('./viewer_comic.js').then(m => {
+        const fn = m.comicSliderChange || (window && window.comicSliderChange);
+        if (typeof fn === 'function') fn(slider, val); else console.warn('[Viewer-Core] comicSliderChange not available');
+      }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_comic:', err));
     } else if (fmt === 'epub') {
-      import('./viewer_epub.js').then(m => m.epubSliderChange(slider, val));
+      import('./viewer_epub.js').then(m => {
+        const fn = m.epubSliderChange || (window && window.epubSliderChange);
+        if (typeof fn === 'function') fn(slider, val); else console.warn('[Viewer-Core] epubSliderChange not available');
+      }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_epub:', err));
     }
   });
 }
@@ -411,7 +445,10 @@ function initViewerSeekBar() {
 export function viewerJumpToFirst() {
   const fmt = state.currentViewerFormat;
   if (fmt === 'zip' || fmt === 'cbz') {
-    import('./viewer_comic.js').then(m => m.comicJumpToFirstPage());
+    import('./viewer_comic.js').then(m => {
+      const fn = m.comicJumpToFirstPage || (window && window.comicJumpToFirstPage);
+      if (typeof fn === 'function') fn(); else console.warn('[Viewer-Core] comicJumpToFirstPage not available');
+    }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_comic:', err));
   } else if (fmt === 'epub') {
     import('./viewer_epub.js').then(m => m.epubJumpToFirstPage());
   }
@@ -420,7 +457,10 @@ export function viewerJumpToFirst() {
 export function viewerJumpToLast() {
   const fmt = state.currentViewerFormat;
   if (fmt === 'zip' || fmt === 'cbz') {
-    import('./viewer_comic.js').then(m => m.comicJumpToLastPage());
+    import('./viewer_comic.js').then(m => {
+      const fn = m.comicJumpToLastPage || (window && window.comicJumpToLastPage);
+      if (typeof fn === 'function') fn(); else console.warn('[Viewer-Core] comicJumpToLastPage not available');
+    }).catch(err => console.warn('[Viewer-Core] Failed to import viewer_comic:', err));
   } else if (fmt === 'epub') {
     import('./viewer_epub.js').then(m => m.epubJumpToLastPage());
   }

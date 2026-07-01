@@ -179,7 +179,20 @@
     object-fit: contain;
 }
 
-.comic-image-wrapper.fit-height .comic-page-pair img,
+/* 페이지 모드 높이맞춤 이미지: position/transform 복원, 2장 보기 대응 */
+.comic-image-wrapper.fit-height .comic-page-pair img {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    max-width: 50%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+
+/* 페이지 모드 너비맞춤 2장 보기: auto로 발동하되 50% 제한 */
 .comic-image-wrapper.fit-width .comic-page-pair img {
     position: relative;
     top: auto;
@@ -192,6 +205,14 @@
     margin: 0;
 }
 
+/* 페이지 모드 single-page에서 너비맞춤이 실제로 동작하도록 강제 (특이성 우선순위 확보) */
+.comic-image-wrapper.fit-width .comic-page-pair.single-page img {
+    width: 100% !important;
+    max-width: 100%;
+    max-height: none;
+    height: auto;
+}
+
 /* 만화 세로 연속 스크롤 모드 전용 스타일 */
 .viewer-modal .comic-image-wrapper.scroll-mode {
     overflow-y: auto;
@@ -200,30 +221,24 @@
     height: 100vh;
 }
 
-.viewer-modal .comic-image-wrapper.scroll-mode img.comic-scroll-img {
+/* 스크롤 모드 이미지: ID 선택자로 특이성 확보 (#media-viewer-modal > .viewer-modal 보다 높음) */
+#media-viewer-modal .comic-image-wrapper.scroll-mode img.comic-scroll-img {
     position: relative;
     top: 0;
     left: 0;
     transform: none;
     display: block;
     margin: 0 auto;
-    width: auto;
+    /* 스크롤 모드에서는 CSS 변수 너비 적용 (기본값 800px, 슬라이더로 조절) */
+    width: var(--comic-scroll-width, 800px);
+    max-width: 100%;
     height: auto;
     max-height: none;
 }
 
-/* 스크롤 모드 + 너비맞춤 */
-.viewer-modal .comic-image-wrapper.scroll-mode.fit-width img.comic-scroll-img {
-    width: 100%;
-    max-width: 100%;
-}
+/* 스크롤 모드 + 너비맞춤: 위 규칙으로 통합 (별도 오버라이드 불필요) */
 
-/* 스크롤 모드 + 높이맞춤 (단행본 비율의 스크롤 모드 대응) */
-.viewer-modal .comic-image-wrapper.scroll-mode.fit-height img.comic-scroll-img {
-    height: 100vh;
-    max-height: 100vh;
-    object-fit: contain;
-}
+/* 스크롤 모드 + 높이맞춤: 너비만 고정, 높이는 자연 비율 유지 */
 
 
 /* 맞추기 토글 버튼 패널 */
@@ -423,10 +438,89 @@
     border-radius: 8px;
     padding: 0.8rem 1.2rem;
     display: flex;
-    gap: 0.8rem;
+    flex-direction: column;   /* 2행 레이아웃 */
+    gap: 0.6rem;
     align-self: center;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     animation: zoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 오버레이 컨트롤 패널 각 행 */
+.overlay-controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 너비 조절 행 — 스크롤 모드에서만 표시 */
+.overlay-width-row {
+    display: none;            /* JS로 스크롤 모드 시만 show */
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 0.4rem;
+}
+.overlay-width-row.visible {
+    display: flex;
+}
+
+/* 너비 라벨 */
+.overlay-width-label {
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 너비 현재값 배지 */
+.overlay-width-value {
+    color: #d8b4fe;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 38px;
+    text-align: right;
+}
+
+/* 너비 조절 슬라이더 */
+.comic-scroll-width-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 180px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.18);
+    outline: none;
+    cursor: pointer;
+    transition: height 0.15s;
+}
+.comic-scroll-width-slider:hover {
+    height: 6px;
+}
+.comic-scroll-width-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #a855f7;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.55);
+    transition: transform 0.15s;
+}
+.comic-scroll-width-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.25);
+}
+.comic-scroll-width-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #a855f7;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 0 6px rgba(168, 85, 247, 0.55);
 }
 
 .btn-overlay-action {

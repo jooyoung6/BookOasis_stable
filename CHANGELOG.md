@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.6.0
+### Changed
+- 웹툰(세로 스크롤형)뷰어시 너비 조절 기능 추가(by freebird81) | Added width adjustment feature for webtoon (vertical scroll type) viewer
+
+
 ## v0.5.9
 ### Changed
 - 만화 보기 방향 변경 기능 및 2장씩 보기 추가(by SUIKANO) | Viewer slide change setting add and 1page, or 2page view

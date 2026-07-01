@@ -47,43 +47,62 @@
                 <span class="overlay-title" id="overlay-title-text" data-i18n="viewer.reading">독서 중...</span>
             </div>
             <div class="overlay-controls-panel">
-                <button class="btn-overlay-action" onclick="jumpToFirstPage()"><i class="fa-solid fa-backward-step"></i> <span data-i18n="viewer.from_beginning">처음부터</span></button>
-                <button class="btn-overlay-action" onclick="markAsCompleted()"><i class="fa-solid fa-circle-check"></i> <span data-i18n="viewer.mark_completed">읽음 완료</span></button>
-                <div class="overlay-fit-group" id="overlay-comic-fit-group">
-                    <button id="btn-overlay-fit-height" class="btn-overlay-fit active" onclick="setComicFitMode('height')" data-i18n="viewer.fit_height_label">높이맞춤</button>
-                    <button id="btn-overlay-fit-width" class="btn-overlay-fit" onclick="setComicFitMode('width')" data-i18n="viewer.fit_width_label">너비맞춤</button>
+                <!-- 1행: 주요 버튼 -->
+                <div class="overlay-controls-row">
+                    <button class="btn-overlay-action" onclick="jumpToFirstPage()"><i class="fa-solid fa-backward-step"></i> <span data-i18n="viewer.from_beginning">처음부터</span></button>
+                    <button class="btn-overlay-action" onclick="markAsCompleted()"><i class="fa-solid fa-circle-check"></i> <span data-i18n="viewer.mark_completed">읽음 완료</span></button>
+                    <div class="overlay-fit-group" id="overlay-comic-fit-group">
+                        <button id="btn-overlay-fit-height" class="btn-overlay-fit active" onclick="setComicFitMode('height')" data-i18n="viewer.fit_height_label">높이맞춤</button>
+                        <button id="btn-overlay-fit-width" class="btn-overlay-fit" onclick="setComicFitMode('width')" data-i18n="viewer.fit_width_label">너비맞춤</button>
+                    </div>
+
+                    <button id="btn-comic-reading-direction" class="btn-overlay-fit" onclick="toggleComicReadingDirection()" title="읽기 방향 전환" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
+                        <i class="fa-solid fa-right-left"></i> <span id="comic-reading-direction-label">왼쪽→오른쪽</span>
+                    </button>
+
+                    <button id="btn-comic-page-step" class="btn-overlay-fit" onclick="toggleComicPageStep()" title="1장/2장 보기 전환" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
+                        <i class="fa-solid fa-file-lines"></i> <span id="comic-page-step-label">1장</span>
+                    </button>
+
+                    <!-- 공용 스크롤 방식 선택 -->
+                    <div class="overlay-scroll-group" id="overlay-scroll-mode-group" style="display: flex; background: rgba(0, 0, 0, 0.3); padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); gap: 1px;">
+                        <button id="btn-scroll-page" class="btn-overlay-fit active" onclick="setScrollMode('page')" data-i18n-title="viewer.scroll_page" title="책장처럼 넘기기" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
+                            <i class="fa-solid fa-book-open"></i> <span data-i18n="viewer.page">페이지</span>
+                        </button>
+                        <button id="btn-scroll-continuous" class="btn-overlay-fit" onclick="setScrollMode('scroll')" data-i18n-title="viewer.scroll_continuous" title="아래로 스크롤" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
+                            <i class="fa-solid fa-arrows-up-down"></i> <span data-i18n="viewer.scroll">스크롤</span>
+                        </button>
+                    </div>
+
+                    <div class="overlay-txt-group" id="overlay-txt-controls-group" style="display: none; display: flex; gap: 0.4rem; align-items: center;">
+                        <!-- 폰트 선택 드롭다운 -->
+                        <select id="viewer-font-select" onchange="onViewerFontChange(this.value)" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; outline: none;">
+                            <option value="batang">KoPub 바탕</option>
+                            <option value="gothic">나눔고딕</option>
+                            <option value="pretendard">Pretendard</option>
+                        </select>
+                        <!-- 폰트 사이즈 조절 -->
+                        <button onclick="changeFontSize(-1)" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.font_smaller" title="글자 작게">A-</button>
+                        <button onclick="changeFontSize(1)" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.font_larger" title="글자 크게">A+</button>
+                        <!-- 테마 토글 -->
+                        <button onclick="toggleTheme()" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.toggle_theme" title="배경 테마 전환"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                    </div>
                 </div>
 
-                <button id="btn-comic-reading-direction" class="btn-overlay-fit" onclick="toggleComicReadingDirection()" title="읽기 방향 전환" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
-                    <i class="fa-solid fa-right-left"></i> <span id="comic-reading-direction-label">왼쪽→오른쪽</span>
-                </button>
-
-                <button id="btn-comic-page-step" class="btn-overlay-fit" onclick="toggleComicPageStep()" title="1장/2장 보기 전환" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
-                    <i class="fa-solid fa-file-lines"></i> <span id="comic-page-step-label">1장</span>
-                </button>
-
-                <!-- 공용 스크롤 방식 선택 -->
-                <div class="overlay-scroll-group" id="overlay-scroll-mode-group" style="display: flex; background: rgba(0, 0, 0, 0.3); padding: 2px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); gap: 1px;">
-                    <button id="btn-scroll-page" class="btn-overlay-fit active" onclick="setScrollMode('page')" data-i18n-title="viewer.scroll_page" title="책장처럼 넘기기" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
-                        <i class="fa-solid fa-book-open"></i> <span data-i18n="viewer.page">페이지</span>
-                    </button>
-                    <button id="btn-scroll-continuous" class="btn-overlay-fit" onclick="setScrollMode('scroll')" data-i18n-title="viewer.scroll_continuous" title="아래로 스크롤" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; border: none; border-radius: 3px; cursor: pointer;">
-                        <i class="fa-solid fa-arrows-up-down"></i> <span data-i18n="viewer.scroll">스크롤</span>
-                    </button>
-                </div>
-
-                <div class="overlay-txt-group" id="overlay-txt-controls-group" style="display: none; display: flex; gap: 0.4rem; align-items: center;">
-                    <!-- 폰트 선택 드롭다운 -->
-                    <select id="viewer-font-select" onchange="onViewerFontChange(this.value)" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.15); padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; outline: none;">
-                        <option value="batang">KoPub 바탕</option>
-                        <option value="gothic">나눔고딕</option>
-                        <option value="pretendard">Pretendard</option>
-                    </select>
-                    <!-- 폰트 사이즈 조절 -->
-                    <button onclick="changeFontSize(-1)" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.font_smaller" title="글자 작게">A-</button>
-                    <button onclick="changeFontSize(1)" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.font_larger" title="글자 크게">A+</button>
-                    <!-- 테마 토글 -->
-                    <button onclick="toggleTheme()" class="btn-overlay-fit" style="border: 1px solid rgba(255,255,255,0.1); padding: 0.3rem 0.7rem; background: transparent; color: #fff; cursor: pointer; border-radius: 4px;" data-i18n-title="viewer.toggle_theme" title="배경 테마 전환"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <!-- 2행: 이미지 너비 조절 슬라이더 (스크롤 모드일 때만 표시) -->
+                <div class="overlay-width-row" id="overlay-width-row">
+                    <span class="overlay-width-label" data-i18n="viewer.image_width">이미지 너비:</span>
+                    <input
+                        type="range"
+                        id="comic-scroll-width-slider"
+                        class="comic-scroll-width-slider"
+                        min="600"
+                        max="900"
+                        step="50"
+                        value="800"
+                        oninput="setComicScrollWidth(this.value)"
+                    >
+                    <span class="overlay-width-value" id="comic-scroll-width-label">800px</span>
                 </div>
             </div>
             <div class="overlay-footer">

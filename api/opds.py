@@ -10,16 +10,21 @@ opds.py – OPDS (외부 뷰어 앱 연동) 라우터
 import html
 import mimetypes
 import os
-import re
 import time
 from datetime import datetime
-from urllib.parse import quote
 
-from flask import Blueprint, Response, jsonify, request, send_file
+from flask import Blueprint, Response, jsonify, request, send_file  # type: ignore[reportMissingImports]
 import database
 from api.cache import LRUCache
+from services.opds_service import (
+    get_book_entries,
+    get_library_list,
+    get_recently_added_entries,
+    get_recently_read_entries,
+    get_series_entries,
+)
 from utils.i18n import _t
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash  # type: ignore[reportMissingImports]
 
 opds_bp = Blueprint('media_opds', __name__)
 
@@ -64,13 +69,9 @@ def _escape_xml(text: str) -> str:
     return html.escape(str(text), quote=True)
 
 
-def _encode_url_segment(value: str) -> str:
-    # cover_image는 라이브러리별 서브디렉터리 경로를 포함할 수 있으므로
-    # 슬래시는 유지하면서 나머지 특수 문자를 인코딩합니다.
-    return quote(str(value), safe='/')
-
-
 OPDS_CACHE_TTL = 60  # seconds
+OPDS_DEFAULT_PAGE_SIZE = 100
+OPDS_MAX_PAGE_SIZE = 200
 opds_response_cache = LRUCache(capacity=50)
 
 
@@ -88,25 +89,23 @@ def _set_cached_opds_response(key: str, xml: str):
     opds_response_cache.put(key, (xml, time.time()))
 
 
-def _extract_title_from_path(file_path: str) -> str:
-    """파일 경로에서 제목 추출 (잘못된 제목용 fallback)"""
-    if not file_path:
-        return ''
-    filename = os.path.basename(file_path)
-    filename = os.path.splitext(filename)[0]  # 확장자 제거
-    filename = re.sub(r'#\d+$', '', filename)  # "#숫자" 제거
-    return filename.strip()
+def _get_page_params():
+    try:
+        page = int(request.args.get('page', '1'))
+    except ValueError:
+        page = 1
+    try:
+        page_size = int(request.args.get('page_size', str(OPDS_DEFAULT_PAGE_SIZE)))
+    except ValueError:
+        page_size = OPDS_DEFAULT_PAGE_SIZE
+
+    page = max(page, 1)
+    page_size = min(max(page_size, 1), OPDS_MAX_PAGE_SIZE)
+    offset = (page - 1) * page_size
+    return page, page_size, offset
 
 
-def _is_corrupted_title(title: str) -> bool:
-    """제목이 손상되었는지 확인 (예: '1 - 0', '2 - 0')"""
-    if not title:
-        return False
-    # 숫자 - 숫자 패턴 (예: "1 - 0", "12 - 5")
-    return bool(re.match(r'^\d+\s*-\s*\d+$', title.strip()))
-
-
-def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False) -> str:
+def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False, next_link: str = None) -> str:
     """Atom XML 규격의 OPDS 피드 문자열 생성"""
     base_url   = request.url_root.rstrip('/')
     now        = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -120,6 +119,10 @@ def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False) -
         f'  <link rel="self" href="{_escape_xml(request.url)}" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>',
         f'  <link rel="start" href="{_escape_xml(base_url + "/opds")}" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>',
     ]
+    if next_link:
+        lines.append(
+            f'  <link rel="next" href="{_escape_xml(next_link)}" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>'
+        )
 
     for e in entries:
         lines += [
@@ -138,7 +141,7 @@ def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False) -
                 f'type="application/atom+xml;profile=opds-catalog;kind=navigation"/>'
             )
             if e.get('cover'):
-                cover_url = f"{base_url}/covers/{_encode_url_segment(e['cover'])}"
+                cover_url = f"{base_url}/covers/{_escape_xml(e['cover'])}"
                 cover_mime = mimetypes.guess_type(e['cover'])[0] or 'image/png'
                 lines.append(f'    <link rel="http://opds-spec.org/image" href="{_escape_xml(cover_url)}" type="{_escape_xml(cover_mime)}"/>')
                 lines.append(f'    <link rel="http://opds-spec.org/image/thumbnail" href="{_escape_xml(cover_url)}" type="{_escape_xml(cover_mime)}"/>')
@@ -148,7 +151,7 @@ def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False) -
                 f'href="{_escape_xml(href)}" type="{_escape_xml(e["mime"]) }"/>'
             )
             if e.get('cover'):
-                cover_url = f"{base_url}/covers/{_encode_url_segment(e['cover'])}"
+                cover_url = f"{base_url}/covers/{_escape_xml(e['cover'])}"
                 cover_mime = mimetypes.guess_type(e['cover'])[0] or 'image/png'
                 lines.append(f'    <link rel="http://opds-spec.org/image" href="{_escape_xml(cover_url)}" type="{_escape_xml(cover_mime)}"/>')
                 lines.append(f'    <link rel="http://opds-spec.org/image/thumbnail" href="{_escape_xml(cover_url)}" type="{_escape_xml(cover_mime)}"/>')
@@ -160,128 +163,6 @@ def _opds_xml(db_type: str, title: str, entries: list, is_adult: bool = False) -
 
 def _atom_response(xml: str):
     return Response(xml, mimetype='application/atom+xml; charset=utf-8')
-
-
-def _series_entries(db_type: str, lib_id: int, prefix: str, urn_prefix: str):
-    """라이브러리의 시리즈 목록을 OPDS 엔트리 리스트로 반환"""
-    conn = database.get_connection(db_type)
-    cursor = conn.cursor()
-    cursor.execute(
-        """
-        SELECT COALESCE(series_name, '') AS series_name,
-               MAX(NULLIF(cover_image, '')) AS cover_image
-        FROM books
-        WHERE library_id = ?
-        GROUP BY COALESCE(series_name, '')
-        ORDER BY COALESCE(series_name, '')
-        """,
-        (lib_id,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return [
-        {
-            'id'   : f"urn:{urn_prefix}:series:{lib_id}:{i}",
-            'title': s['series_name'] or '기타',
-            'type' : 'navigation',
-            'href' : f"{prefix}/{lib_id}/{_encode_url_segment(s['series_name'] or '기타')}",
-            'cover': s['cover_image'],
-        }
-        for i, s in enumerate(rows)
-    ]
-
-
-def _book_entries(db_type: str, lib_id: int, series_name: str, download_prefix: str, urn_prefix: str):
-    """시리즈 단행본 목록을 OPDS acquisition 엔트리 리스트로 반환"""
-    conn = database.get_connection(db_type)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, title, file_path, cover_image, summary FROM books "
-        "WHERE library_id=? AND series_name=?",
-        (lib_id, series_name)
-    )
-    books = cursor.fetchall()
-    conn.close()
-    entries = []
-    for b in books:
-        mime = mimetypes.guess_type(b['file_path'])[0] or 'application/octet-stream'
-        entries.append({
-            'id'     : f"urn:{urn_prefix}:book:{b['id']}",
-            'title'  : b['title'],
-            'summary': b['summary'],
-            'type'   : 'acquisition',
-            'href'   : f"{download_prefix}/{b['id']}",
-            'mime'   : mime,
-            'cover'  : b['cover_image'],
-        })
-    return entries
-
-
-def _recently_added_entries(db_type: str, download_prefix: str, urn_prefix: str):
-    """신규 추가 도서 목록을 OPDS acquisition 엔트리 리스트로 반환"""
-    conn = database.get_connection(db_type)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT id, title, file_path, cover_image
-        FROM books
-        ORDER BY created_at DESC, id DESC
-        LIMIT 20
-    """)
-    books = cursor.fetchall()
-    conn.close()
-    entries = []
-    for i, b in enumerate(books):
-        mime = mimetypes.guess_type(b['file_path'])[0] or 'application/octet-stream'
-        entries.append({
-            'id'     : f"urn:{urn_prefix}:new:{i}",
-            'title'  : b['title'],
-            'summary': '',
-            'type'   : 'acquisition',
-            'href'   : f"{download_prefix}/{b['id']}",
-            'mime'   : mime,
-            'cover'  : b['cover_image'],
-        })
-    return entries
-
-
-def _recently_read_entries(db_type: str, download_prefix: str, urn_prefix: str):
-    """최근 읽은 도서 목록을 OPDS acquisition 엔트리 리스트로 반환"""
-    conn = database.get_connection(db_type)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT value FROM settings WHERE key = 'RECENT_BOOKS_LIMIT'")
-    row_limit = cursor.fetchone()
-    limit = 30
-    if row_limit and row_limit['value'] and str(row_limit['value']).isdigit():
-        limit = int(row_limit['value'])
-
-    cursor.execute("""
-        SELECT b.id, b.title, b.file_path, b.cover_image, p.last_read_at
-        FROM user_progress p
-        JOIN books b ON p.book_id = b.id
-        WHERE b.title IS NOT NULL AND b.title != ''
-        ORDER BY p.last_read_at DESC
-        LIMIT ?
-    """, (limit,))
-    books = cursor.fetchall()
-    conn.close()
-    entries = []
-    for i, b in enumerate(books):
-        mime = mimetypes.guess_type(b['file_path'])[0] or 'application/octet-stream'
-        # 제목이 손상된 경우 파일명에서 추출
-        title = b['title']
-        if _is_corrupted_title(title):
-            title = _extract_title_from_path(b['file_path'])
-        entries.append({
-            'id'     : f"urn:{urn_prefix}:read:{i}",
-            'title'  : title,
-            'summary': '',
-            'type'   : 'acquisition',
-            'href'   : f"{download_prefix}/{b['id']}",
-            'mime'   : mime,
-            'cover'  : b['cover_image'],
-        })
-    return entries
 
 
 # ─── 라우터 ──────────────────────────────────────────────────
@@ -297,11 +178,7 @@ def opds_root():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    conn = database.get_connection('general')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM libraries")
-    libs = cursor.fetchall()
-    conn.close()
+    libs = get_library_list('general')
     entries = [
         {'id': f"urn:library:{l['id']}", 'title': l['name'],
          'type': 'navigation', 'href': f"/opds/library/{l['id']}"}
@@ -330,11 +207,7 @@ def opds_adult_root():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    conn = database.get_connection('adult')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM libraries")
-    libs = cursor.fetchall()
-    conn.close()
+    libs = get_library_list('adult')
     entries = [
         {'id': f"urn:adult:library:{l['id']}", 'title': l['name'],
          'type': 'navigation', 'href': f"/opds/adult/library/{l['id']}"}
@@ -361,7 +234,7 @@ def opds_library(lib_id: int):
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _series_entries('general', lib_id, '/opds/series', 'general')
+    entries = get_series_entries('general', lib_id, '/opds/series', 'general')
     xml = _opds_xml('general', "Library Series", entries)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
@@ -376,7 +249,7 @@ def opds_adult_library(lib_id: int):
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _series_entries('adult', lib_id, '/opds/adult/series', 'adult')
+    entries = get_series_entries('adult', lib_id, '/opds/adult/series', 'adult')
     xml = _opds_xml('adult', "Adult Library Series", entries, is_adult=True)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
@@ -386,16 +259,40 @@ def opds_adult_library(lib_id: int):
 def opds_series_books(lib_id: int, series_name: str):
     if not _check_auth(is_adult=False):
         return _unauthorized()
-    entries = _book_entries('general', lib_id, series_name, '/opds/download/general', 'general')
-    return _atom_response(_opds_xml('general', f"Series: {series_name}", entries))
+
+    page, page_size, offset = _get_page_params()
+    cache_key = f'opds_series:general:{lib_id}:{series_name}:{page}:{page_size}'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
+    entries, total = get_book_entries('general', lib_id, series_name, '/opds/download/general', 'general', limit=page_size, offset=offset)
+    next_link = None
+    if offset + page_size < total:
+        next_link = f"{request.base_url}?page={page+1}&page_size={page_size}"
+    xml = _opds_xml('general', f"Series: {series_name}", entries, next_link=next_link)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/adult/series/<int:lib_id>/<string:series_name>', methods=['GET'])
 def opds_adult_series_books(lib_id: int, series_name: str):
     if not _check_auth(is_adult=True):
         return _unauthorized()
-    entries = _book_entries('adult', lib_id, series_name, '/opds/download/adult', 'adult')
-    return _atom_response(_opds_xml('adult', f"Adult Series: {series_name}", entries, is_adult=True))
+
+    page, page_size, offset = _get_page_params()
+    cache_key = f'opds_series:adult:{lib_id}:{series_name}:{page}:{page_size}'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
+    entries, total = get_book_entries('adult', lib_id, series_name, '/opds/download/adult', 'adult', limit=page_size, offset=offset)
+    next_link = None
+    if offset + page_size < total:
+        next_link = f"{request.base_url}?page={page+1}&page_size={page_size}"
+    xml = _opds_xml('adult', f"Adult Series: {series_name}", entries, is_adult=True, next_link=next_link)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/recently-added', methods=['GET'])
@@ -408,7 +305,7 @@ def opds_recently_added():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _recently_added_entries('general', '/opds/download/general', 'general')
+    entries = get_recently_added_entries('general', '/opds/download/general', 'general')
     xml = _opds_xml('general', "신규 추가", entries)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
@@ -424,7 +321,7 @@ def opds_recently_read():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _recently_read_entries('general', '/opds/download/general', 'general')
+    entries = get_recently_read_entries('general', '/opds/download/general', 'general')
     xml = _opds_xml('general', "최근 읽은 도서", entries)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
@@ -440,7 +337,7 @@ def opds_adult_recently_added():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _recently_added_entries('adult', '/opds/download/adult', 'adult')
+    entries = get_recently_added_entries('adult', '/opds/download/adult', 'adult')
     xml = _opds_xml('adult', "신규 추가", entries, is_adult=True)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
@@ -456,7 +353,7 @@ def opds_adult_recently_read():
     if cached_xml is not None:
         return _atom_response(cached_xml)
 
-    entries = _recently_read_entries('adult', '/opds/download/adult', 'adult')
+    entries = get_recently_read_entries('adult', '/opds/download/adult', 'adult')
     xml = _opds_xml('adult', "최근 읽은 도서", entries, is_adult=True)
     _set_cached_opds_response(cache_key, xml)
     return _atom_response(xml)
