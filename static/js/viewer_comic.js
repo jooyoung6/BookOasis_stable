@@ -9,6 +9,129 @@ export let comicTotalPages = 0;
 let comicLoadingTimer = null;
 let observer = null;
 let isScrollingToTarget = false;
+let comicReadingDirection = 'ltr';
+let comicPageStep = 1;
+
+function getStoredComicReadingDirection() {
+  const saved = localStorage.getItem('comic_reading_direction');
+  return saved === 'rtl' ? 'rtl' : 'ltr';
+}
+
+function setComicReadingDirection(direction) {
+  comicReadingDirection = direction === 'rtl' ? 'rtl' : 'ltr';
+  localStorage.setItem('comic_reading_direction', comicReadingDirection);
+  syncComicReadingDirectionUI();
+  return comicReadingDirection;
+}
+
+export function getComicReadingDirection() {
+  return comicReadingDirection;
+}
+
+export function toggleComicReadingDirection() {
+  const nextDirection = comicReadingDirection === 'rtl' ? 'ltr' : 'rtl';
+  return setComicReadingDirection(nextDirection);
+}
+
+function getStoredComicPageStep() {
+  const saved = parseInt(localStorage.getItem('comic_page_step'), 10);
+  return saved === 2 ? 2 : 1;
+}
+
+export function setComicPageStep(step) {
+  const scrollMode = localStorage.getItem('viewer_scroll_mode') || 'page';
+  const safeStep = step === 2 ? 2 : 1;
+  if (scrollMode === 'scroll') {
+    comicPageStep = 1;
+    localStorage.setItem('comic_page_step', '1');
+    syncComicPageStepUI();
+    return 1;
+  }
+
+  comicPageStep = safeStep;
+  localStorage.setItem('comic_page_step', String(comicPageStep));
+  syncComicPageStepUI();
+  return comicPageStep;
+}
+
+export function getComicPageStep() {
+  return comicPageStep;
+}
+
+export function toggleComicPageStep() {
+  const scrollMode = localStorage.getItem('viewer_scroll_mode') || 'page';
+  if (scrollMode === 'scroll') {
+    return setComicPageStep(1);
+  }
+  return setComicPageStep(comicPageStep === 2 ? 1 : 2);
+}
+
+function getComicDisplayPageIndex(basePage) {
+  const scrollMode = localStorage.getItem('viewer_scroll_mode') || 'page';
+  const displayPage = (scrollMode === 'scroll' || comicPageStep !== 2)
+    ? basePage
+    : (comicReadingDirection === 'rtl'
+      ? Math.min(basePage + 1, Math.max(0, comicTotalPages - 1))
+      : basePage);
+  console.log(`[Viewer-Comic] getComicDisplayPageIndex - basePage=${basePage}, scrollMode=${scrollMode}, comicPageStep=${comicPageStep}, comicReadingDirection=${comicReadingDirection}, displayPage=${displayPage}`);
+  return displayPage;
+}
+
+function getComicPageIndices() {
+  const scrollMode = localStorage.getItem('viewer_scroll_mode') || 'page';
+  const displayPageIndex = getComicDisplayPageIndex(comicCurrentPage);
+  if (scrollMode === 'scroll' || comicPageStep !== 2) {
+    console.log(`[Viewer-Comic] getComicPageIndices - single page mode, pageIndex=${displayPageIndex}`);
+    return [displayPageIndex];
+  }
+
+  if (comicReadingDirection === 'rtl') {
+    const prevPage = displayPageIndex - 1;
+    const indices = prevPage >= 0 ? [displayPageIndex, prevPage] : [displayPageIndex];
+    console.log(`[Viewer-Comic] getComicPageIndices - rtl 2-page mode, indices=${indices.join(',')}`);
+    return indices;
+  }
+
+  const nextPage = displayPageIndex + 1;
+  const indices = nextPage < comicTotalPages ? [displayPageIndex, nextPage] : [displayPageIndex];
+  console.log(`[Viewer-Comic] getComicPageIndices - ltr 2-page mode, indices=${indices.join(',')}`);
+  return indices;
+}
+
+function syncComicReadingDirectionUI() {
+  const btn = document.getElementById('btn-comic-reading-direction');
+  const label = document.getElementById('comic-reading-direction-label');
+  if (btn) {
+    btn.classList.toggle('active', comicReadingDirection === 'rtl');
+    btn.setAttribute('data-direction', comicReadingDirection);
+    btn.title = comicReadingDirection === 'rtl' ? '오른쪽→왼쪽 읽기' : '왼쪽→오른쪽 읽기';
+  }
+  if (label) {
+    label.textContent = comicReadingDirection === 'rtl' ? '오른쪽→왼쪽' : '왼쪽→오른쪽';
+  }
+}
+
+function syncComicPageStepUI() {
+  const btn = document.getElementById('btn-comic-page-step');
+  const label = document.getElementById('comic-page-step-label');
+  const scrollMode = localStorage.getItem('viewer_scroll_mode') || 'page';
+  if (btn) {
+    btn.classList.toggle('active', comicPageStep === 2 && scrollMode !== 'scroll');
+    btn.setAttribute('data-step', String(comicPageStep));
+    btn.title = scrollMode === 'scroll' ? '스크롤 모드에서는 1장씩만 적용됩니다' : (comicPageStep === 2 ? '2장씩 보기' : '1장씩 보기');
+  }
+  if (label) {
+    label.textContent = scrollMode === 'scroll' ? '1장' : `${comicPageStep}장`;
+  }
+}
+
+export function initComicReadingDirection() {
+  setComicReadingDirection(getStoredComicReadingDirection());
+}
+
+export function initComicPageStep() {
+  setComicPageStep(getStoredComicPageStep());
+}
 
 export async function initComicViewer(bookId, pagesRead, totalPages) {
   console.log(`[Viewer-Comic] initComicViewer - 읽은 페이지: ${pagesRead}, 전체 페이지: ${totalPages}`);
@@ -36,6 +159,9 @@ export async function initComicViewer(bookId, pagesRead, totalPages) {
     }
   }
 
+  initComicReadingDirection();
+  initComicPageStep();
+  console.log(`[Viewer-Comic] initComicViewer 상태 - direction=${comicReadingDirection}, page_step=${comicPageStep}, scroll_mode=${localStorage.getItem('viewer_scroll_mode') || 'page'}, comicCurrentPage=${comicCurrentPage}, comicTotalPages=${comicTotalPages}`);
   applyComicFitMode();
   loadComicPage();
 }
@@ -149,16 +275,8 @@ export function loadComicPage() {
     updatePageInfo();
 
   } else {
-    let imgEl = document.getElementById('comic-page-img');
-    if (!imgEl) {
-      wrapper.innerHTML = '<img id="comic-page-img" src="" alt="Comic Page">';
-      imgEl = document.getElementById('comic-page-img');
-    } else {
-      wrapper.innerHTML = '';
-      wrapper.appendChild(imgEl);
-    }
-
-    console.log(`[Viewer-Comic] 페이지 모드 로드 시작 - page_idx=${comicCurrentPage}`);
+    const pageIndices = getComicPageIndices();
+    console.log(`[Viewer-Comic] 페이지 모드 로드 시작 - logical_page=${comicCurrentPage}, display_pages=${pageIndices.join(',')}, wrapperExists=${!!wrapper}`);
 
     if (comicLoadingTimer) {
       clearTimeout(comicLoadingTimer);
@@ -169,43 +287,71 @@ export function loadComicPage() {
     const delay = (delayStr !== null) ? parseInt(delayStr, 10) : 300;
 
     comicLoadingTimer = setTimeout(() => {
-      imgEl.style.opacity = '0';
+      document.querySelectorAll('.comic-page-img').forEach(img => img.style.opacity = '0');
       showViewerLoading(i18n.t("viewer.loading_comic_title"), i18n.t("viewer.loading_comic_sub"));
     }, delay);
 
-    imgEl.onload = () => {
-      console.log(`[Viewer-Comic] 만화 이미지 로드 성공: page_idx=${comicCurrentPage}`);
-      if (comicLoadingTimer) {
-        clearTimeout(comicLoadingTimer);
-        comicLoadingTimer = null;
-      }
-      hideViewerLoading();
-      imgEl.style.opacity = '1';
-      
-      if (comicCurrentPage === 0) {
-        const aspectRatio = imgEl.naturalWidth / imgEl.naturalHeight;
-        if (aspectRatio < 0.7) {
-          setComicFitMode('width');
-        } else {
-          setComicFitMode('height');
+    wrapper.innerHTML = '<div class="comic-page-pair" style="visibility: hidden;"></div>';
+    const pairContainer = wrapper.querySelector('.comic-page-pair');
+    let loadedCount = 0;
+    const expectedLoads = pageIndices.length;
+    const imageElements = [];
+
+    pageIndices.forEach((pageIndex, index) => {
+      const imgEl = document.createElement('img');
+      imgEl.className = `comic-page-img ${expectedLoads === 2 ? (index === 0 ? 'comic-page-img-left' : 'comic-page-img-right') : ''}`.trim();
+      imgEl.dataset.index = pageIndex;
+      imgEl.alt = `Page ${pageIndex + 1}`;
+      imgEl.loading = 'eager';
+      imgEl.style.opacity = '0';
+
+      imgEl.onload = () => {
+        loadedCount += 1;
+        imageElements[index] = imgEl;
+        if (loadedCount === expectedLoads) {
+          if (comicLoadingTimer) {
+            clearTimeout(comicLoadingTimer);
+            comicLoadingTimer = null;
+          }
+          pairContainer.innerHTML = '';
+          imageElements.forEach((loadedImg, loadedIndex) => {
+            if (loadedImg) {
+              loadedImg.style.opacity = '1';
+              pairContainer.appendChild(loadedImg);
+            }
+          });
+          pairContainer.style.visibility = 'visible';
+          hideViewerLoading();
+
+          if (comicCurrentPage === 0 && pageIndices.length === 1) {
+            const aspectRatio = imageElements[0].naturalWidth / imageElements[0].naturalHeight;
+            if (aspectRatio < 0.7) {
+              setComicFitMode('width');
+            } else {
+              setComicFitMode('height');
+            }
+          }
+
+          preloadNextPages();
         }
-      }
+      };
 
-      preloadNextPages();
-    };
+      imgEl.onerror = () => {
+        console.error(`[Viewer-Comic] 만화 이미지 로드 실패: page_idx=${pageIndex}`);
+        if (comicLoadingTimer) {
+          clearTimeout(comicLoadingTimer);
+          comicLoadingTimer = null;
+        }
+        showViewerError(i18n.t("viewer.error_comic_title"), i18n.t("viewer.error_comic_sub"));
+        imgEl.style.opacity = '1';
+      };
 
-    imgEl.onerror = () => {
-      console.error(`[Viewer-Comic] 만화 이미지 로드 실패: page_idx=${comicCurrentPage}`);
-      if (comicLoadingTimer) {
-        clearTimeout(comicLoadingTimer);
-        comicLoadingTimer = null;
-      }
-      showViewerError(i18n.t("viewer.error_comic_title"), i18n.t("viewer.error_comic_sub"));
-      imgEl.style.opacity = '1';
-    };
+      imgEl.src = `/api/media/stream?db_type=${state.currentLibraryType}&book_id=${state.activeBookId}&page_idx=${pageIndex}`;
+      imageElements[index] = imgEl;
+      console.log(`[Viewer-Comic] 이미지 요청 시작 - pageIndex=${pageIndex}, class=${imgEl.className}`);
+    });
 
-    imgEl.src = `/api/media/stream?db_type=${state.currentLibraryType}&book_id=${state.activeBookId}&page_idx=${comicCurrentPage}`;
-    
+    console.log(`[Viewer-Comic] 페이지 모드 준비 - expectedLoads=${expectedLoads}`);
     updatePageInfo();
     saveProgress(state.activeBookId, comicCurrentPage, comicTotalPages);
   }
@@ -213,10 +359,16 @@ export function loadComicPage() {
 
 function updatePageInfo() {
   const infoEl = document.getElementById('comic-page-info');
-  const textInfo = `${comicCurrentPage + 1} / ${comicTotalPages || '?'}`;
-  if (infoEl) infoEl.textContent = textInfo;
-  
   const overlayInfoEl = document.getElementById('comic-overlay-page-info');
+  const indices = getComicPageIndices();
+  const totalPages = comicTotalPages || '?';
+  const startPage = indices[0] + 1;
+  const endPage = indices[indices.length - 1] + 1;
+  const textInfo = indices.length === 2
+    ? `${startPage}-${endPage} / ${totalPages}`
+    : `${startPage} / ${totalPages}`;
+
+  if (infoEl) infoEl.textContent = textInfo;
   if (overlayInfoEl) overlayInfoEl.textContent = textInfo;
 
   const overlayTitleEl = document.getElementById('overlay-title-text');
@@ -349,8 +501,10 @@ export function nextComicPage() {
       });
     }
   } else {
-    if (comicCurrentPage < comicTotalPages - 1) {
-      comicCurrentPage++;
+    const step = comicPageStep || 1;
+    const nextPage = Math.min(comicCurrentPage + step, comicTotalPages - 1);
+    if (nextPage !== comicCurrentPage) {
+      comicCurrentPage = nextPage;
       loadComicPage();
     } else {
       import('./viewer_next_episode.js').then(m => {
@@ -375,8 +529,10 @@ export function prevComicPage() {
       setTimeout(() => { isScrollingToTarget = false; }, 500);
     }
   } else {
-    if (comicCurrentPage > 0) {
-      comicCurrentPage--;
+    const step = comicPageStep || 1;
+    const prevPage = Math.max(comicCurrentPage - step, 0);
+    if (prevPage !== comicCurrentPage) {
+      comicCurrentPage = prevPage;
       loadComicPage();
     }
   }
@@ -385,8 +541,9 @@ export function prevComicPage() {
 // 다음 2개 페이지 이미지 비동기 프리로드 헬퍼
 function preloadNextPages() {
   const preloadCount = 2;
+  const basePage = getComicDisplayPageIndex(comicCurrentPage);
   for (let i = 1; i <= preloadCount; i++) {
-    const nextIdx = comicCurrentPage + i;
+    const nextIdx = basePage + i;
     if (nextIdx < comicTotalPages) {
       const preloadImg = new Image();
       preloadImg.src = `/api/media/stream?db_type=${state.currentLibraryType}&book_id=${state.activeBookId}&page_idx=${nextIdx}`;

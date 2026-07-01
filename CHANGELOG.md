@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v0.5.9
+### Changed
+- 만화 보기 방향 변경 기능 및 2장씩 보기 추가(by SUIKANO) | Viewer slide change setting add and 1page, or 2page view
+- OPDS 속도 개선 (캐시도입 및 쿼리문 개선. by 데브닉스) | OPDS load caching included and query modified
+
 ## v0.5.8
 ### Changed
 - 로그인시 자동로그인 기능 추가 | added remember me functionality in login

@@ -1,6 +1,6 @@
 // viewer.js – 미디어 뷰어 라이프사이클 및 단축키 코어 조율기
 import { state } from './state.js';
-import { initComicViewer, nextComicPage, prevComicPage, setComicFitMode, toggleComicOverlay, markAsCompleted } from './viewer_comic.js';
+import { initComicViewer, nextComicPage, prevComicPage, setComicFitMode, toggleComicOverlay, markAsCompleted, getComicReadingDirection, toggleComicReadingDirection, getComicPageStep, toggleComicPageStep, setComicPageStep } from './viewer_comic.js';
 import { initTxtViewer, prevTxtPage, nextTxtPage, applyTxtSettings } from './viewer_txt.js';
 import { initPdfViewer, nextPdfPage, prevPdfPage, clearPdfViewer } from './viewer_pdf.js';
 import { initEpubViewer, clearEpubViewer, epubPrevPage, epubNextPage, applyEpubSettings, changeEpubScrollMode } from './viewer_epub.js';
@@ -190,7 +190,11 @@ export function toggleFullscreenViewer() {
 // 이전 페이지 통합 조율
 export function prevPage() {
   if (document.getElementById('comic-viewer-container').style.display !== 'none') {
-    prevComicPage();
+    if (getComicReadingDirection() === 'rtl') {
+      nextComicPage();
+    } else {
+      prevComicPage();
+    }
   } else if (document.getElementById('pdf-viewer-container').style.display !== 'none') {
     prevPdfPage();
   } else if (document.getElementById('epub-viewer-container').style.display !== 'none') {
@@ -203,7 +207,11 @@ export function prevPage() {
 // 다음 페이지 통합 조율
 export function nextPage() {
   if (document.getElementById('comic-viewer-container').style.display !== 'none') {
-    nextComicPage();
+    if (getComicReadingDirection() === 'rtl') {
+      prevComicPage();
+    } else {
+      nextComicPage();
+    }
   } else if (document.getElementById('pdf-viewer-container').style.display !== 'none') {
     nextPdfPage();
   } else if (document.getElementById('epub-viewer-container').style.display !== 'none') {
@@ -353,6 +361,9 @@ window.setScrollMode = function(mode) {
   // 만화책 뷰어가 활성화되어 있는 경우, 스크롤 모드를 적용하여 다시 렌더링
   if (document.getElementById('comic-viewer-container').style.display !== 'none') {
     import('./viewer_comic.js').then(m => {
+      if (mode === 'scroll') {
+        m.setComicPageStep(1);
+      }
       m.applyComicFitMode();
       m.loadComicPage();
     });
@@ -420,6 +431,8 @@ window.viewerJumpToLast = viewerJumpToLast;
 window.prevPage = prevPage;
 window.nextPage = nextPage;
 window.toggleTheme = toggleReaderTheme;
+window.toggleComicReadingDirection = toggleComicReadingDirection;
+window.toggleComicPageStep = toggleComicPageStep;
 
 // 최초 로드 시 사용자 폰트 사전 로딩
 loadCustomFontsList();

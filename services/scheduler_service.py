@@ -1,9 +1,58 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import database
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from tools.scanner import scan_library
+
+
+def normalize_cron_expression(cron_expression):
+    """Convert Linux-style cron weekday numbers to APScheduler-compatible values.
+
+    Linux cron uses 0-7 where 0 and 7 mean Sunday, 1-6 mean Monday-Saturday.
+    APScheduler uses 0-6 where 0 means Monday and 6 means Sunday.
+    """
+    if not cron_expression:
+        return cron_expression
+
+    parts = cron_expression.split()
+    if len(parts) != 5:
+        return cron_expression
+
+    minute, hour, day, month, day_of_week = parts
+
+    if day_of_week == '*':
+        return cron_expression
+
+    if re.fullmatch(r'[A-Za-z]+', day_of_week):
+        return cron_expression
+
+    def convert_value(value):
+        if value in {'*', '?'}:
+            return value
+        if value.isdigit():
+            number = int(value)
+            if number == 0:
+                return '6'
+            if number == 7:
+                return '0'
+            if 1 <= number <= 6:
+                return str(number - 1)
+        return value
+
+    if ',' in day_of_week:
+        converted = ','.join(convert_value(v) for v in day_of_week.split(','))
+    elif '-' in day_of_week:
+        start, end = day_of_week.split('-', 1)
+        converted = f"{convert_value(start)}-{convert_value(end)}"
+    else:
+        converted = convert_value(day_of_week)
+
+    if converted == day_of_week:
+        return cron_expression
+
+    return f"{minute} {hour} {day} {month} {converted}"
 
 # 싱글톤 백그라운드 스케줄러 인스턴스
 scheduler = BackgroundScheduler()
@@ -69,9 +118,11 @@ class SchedulerService:
         """특정 라이브러리의 스케줄러 Job 등록"""
         job_id = f"scan_{db_type}_{library_id}"
         
+        normalized_expression = normalize_cron_expression(cron_expression)
+
         # 크론 검증
         try:
-            trigger = CronTrigger.from_crontab(cron_expression)
+            trigger = CronTrigger.from_crontab(normalized_expression)
         except ValueError as e:
             print(f"[Scheduler] Invalid cron expression passed ({cron_expression}): {e}")
             return False
@@ -91,7 +142,7 @@ class SchedulerService:
             args=[db_type, db_path, library_id, physical_path],
             replace_existing=True
         )
-        print(f"[Scheduler] Job registered: ID={job_id}, Schedule={cron_expression}")
+        print(f"[Scheduler] Job registered: ID={job_id}, Schedule={cron_expression} (normalized={normalized_expression})")
         return True
 
     @staticmethod

@@ -11,11 +11,13 @@ import html
 import mimetypes
 import os
 import re
+import time
 from datetime import datetime
 from urllib.parse import quote
 
 from flask import Blueprint, Response, jsonify, request, send_file
 import database
+from api.cache import LRUCache
 from utils.i18n import _t
 from werkzeug.security import check_password_hash
 
@@ -66,6 +68,24 @@ def _encode_url_segment(value: str) -> str:
     # cover_image는 라이브러리별 서브디렉터리 경로를 포함할 수 있으므로
     # 슬래시는 유지하면서 나머지 특수 문자를 인코딩합니다.
     return quote(str(value), safe='/')
+
+
+OPDS_CACHE_TTL = 60  # seconds
+opds_response_cache = LRUCache(capacity=50)
+
+
+def _get_cached_opds_response(key: str):
+    cached = opds_response_cache.get(key)
+    if cached is None:
+        return None
+    xml, timestamp = cached
+    if time.time() - timestamp > OPDS_CACHE_TTL:
+        return None
+    return xml
+
+
+def _set_cached_opds_response(key: str, xml: str):
+    opds_response_cache.put(key, (xml, time.time()))
 
 
 def _extract_title_from_path(file_path: str) -> str:
@@ -148,16 +168,11 @@ def _series_entries(db_type: str, lib_id: int, prefix: str, urn_prefix: str):
     cursor = conn.cursor()
     cursor.execute(
         """
-        SELECT DISTINCT series_name,
-            (SELECT cover_image FROM books b2
-             WHERE b2.library_id = b1.library_id
-               AND COALESCE(b2.series_name, '') = COALESCE(b1.series_name, '')
-               AND b2.cover_image IS NOT NULL
-               AND b2.cover_image != ''
-             ORDER BY b2.title ASC
-             LIMIT 1) AS cover_image
-        FROM books b1
+        SELECT COALESCE(series_name, '') AS series_name,
+               MAX(NULLIF(cover_image, '')) AS cover_image
+        FROM books
         WHERE library_id = ?
+        GROUP BY COALESCE(series_name, '')
         ORDER BY COALESCE(series_name, '')
         """,
         (lib_id,)
@@ -276,6 +291,12 @@ def opds_root():
     """일반 OPDS 최상위 피드"""
     if not _check_auth(is_adult=False):
         return _unauthorized()
+
+    cache_key = 'opds_root:general'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     conn = database.get_connection('general')
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM libraries")
@@ -293,7 +314,9 @@ def opds_root():
         {'id': 'urn:recently-read', 'title': '최근 읽은 도서',
          'type': 'navigation', 'href': '/opds/recently-read'},
     ])
-    return _atom_response(_opds_xml('general', "My Supporter OPDS Catalog", entries))
+    xml = _opds_xml('general', "My Supporter OPDS Catalog", entries)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds-adult', methods=['GET'])
@@ -301,6 +324,12 @@ def opds_adult_root():
     """성인 전용 OPDS 최상위 피드"""
     if not _check_auth(is_adult=True):
         return _unauthorized()
+
+    cache_key = 'opds_root:adult'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     conn = database.get_connection('adult')
     cursor = conn.cursor()
     cursor.execute("SELECT id, name FROM libraries")
@@ -318,23 +347,39 @@ def opds_adult_root():
         {'id': 'urn:adult:recently-read', 'title': '최근 읽은 도서',
          'type': 'navigation', 'href': '/opds/adult/recently-read'},
     ])
-    return _atom_response(_opds_xml('adult', "My Supporter Adult OPDS Catalog", entries, is_adult=True))
+    xml = _opds_xml('adult', "My Supporter Adult OPDS Catalog", entries, is_adult=True)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/library/<int:lib_id>', methods=['GET'])
 def opds_library(lib_id: int):
     if not _check_auth(is_adult=False):
         return _unauthorized()
+    cache_key = f'opds_library:general:{lib_id}'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _series_entries('general', lib_id, '/opds/series', 'general')
-    return _atom_response(_opds_xml('general', "Library Series", entries))
+    xml = _opds_xml('general', "Library Series", entries)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/adult/library/<int:lib_id>', methods=['GET'])
 def opds_adult_library(lib_id: int):
     if not _check_auth(is_adult=True):
         return _unauthorized()
+    cache_key = f'opds_library:adult:{lib_id}'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _series_entries('adult', lib_id, '/opds/adult/series', 'adult')
-    return _atom_response(_opds_xml('adult', "Adult Library Series", entries, is_adult=True))
+    xml = _opds_xml('adult', "Adult Library Series", entries, is_adult=True)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/series/<int:lib_id>/<string:series_name>', methods=['GET'])
@@ -358,8 +403,15 @@ def opds_recently_added():
     """신규 추가 도서 목록 (일반)"""
     if not _check_auth(is_adult=False):
         return _unauthorized()
+    cache_key = 'opds_recently_added:general'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _recently_added_entries('general', '/opds/download/general', 'general')
-    return _atom_response(_opds_xml('general', "신규 추가", entries))
+    xml = _opds_xml('general', "신규 추가", entries)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/recently-read', methods=['GET'])
@@ -367,8 +419,15 @@ def opds_recently_read():
     """최근 읽은 도서 목록 (일반)"""
     if not _check_auth(is_adult=False):
         return _unauthorized()
+    cache_key = 'opds_recently_read:general'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _recently_read_entries('general', '/opds/download/general', 'general')
-    return _atom_response(_opds_xml('general', "최근 읽은 도서", entries))
+    xml = _opds_xml('general', "최근 읽은 도서", entries)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/adult/recently-added', methods=['GET'])
@@ -376,8 +435,15 @@ def opds_adult_recently_added():
     """신규 추가 도서 목록 (성인)"""
     if not _check_auth(is_adult=True):
         return _unauthorized()
+    cache_key = 'opds_recently_added:adult'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _recently_added_entries('adult', '/opds/download/adult', 'adult')
-    return _atom_response(_opds_xml('adult', "신규 추가", entries, is_adult=True))
+    xml = _opds_xml('adult', "신규 추가", entries, is_adult=True)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/adult/recently-read', methods=['GET'])
@@ -385,8 +451,15 @@ def opds_adult_recently_read():
     """최근 읽은 도서 목록 (성인)"""
     if not _check_auth(is_adult=True):
         return _unauthorized()
+    cache_key = 'opds_recently_read:adult'
+    cached_xml = _get_cached_opds_response(cache_key)
+    if cached_xml is not None:
+        return _atom_response(cached_xml)
+
     entries = _recently_read_entries('adult', '/opds/download/adult', 'adult')
-    return _atom_response(_opds_xml('adult', "최근 읽은 도서", entries, is_adult=True))
+    xml = _opds_xml('adult', "최근 읽은 도서", entries, is_adult=True)
+    _set_cached_opds_response(cache_key, xml)
+    return _atom_response(xml)
 
 
 @opds_bp.route('/opds/download/<string:db_type>/<int:book_id>', methods=['GET'])

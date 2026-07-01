@@ -123,6 +123,36 @@
     display: block;
 }
 
+.comic-page-pair {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    gap: 0.25rem;
+}
+
+.comic-page-pair img {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    max-width: 50%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    margin: 0;
+}
+
+.comic-page-img-left {
+    margin-right: 0.25rem;
+}
+
+.comic-page-img-right {
+    margin-left: 0.25rem;
+}
+
 /* 너비에 맞추기 모드 (웹툰 등 세로 스크롤용) */
 .comic-image-wrapper.fit-width img {
     position: relative; /* Override absolute */
@@ -147,6 +177,19 @@
     width: auto;
     height: auto;
     object-fit: contain;
+}
+
+.comic-image-wrapper.fit-height .comic-page-pair img,
+.comic-image-wrapper.fit-width .comic-page-pair img {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    max-width: 50%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    margin: 0;
 }
 
 /* 만화 세로 연속 스크롤 모드 전용 스타일 */
