@@ -82,6 +82,9 @@ pip install -r requirements.txt
 # Configure the settings file
 cp .env.example .env
 # Enter essential settings such as Aladin TTBKey in the .env file
+nano SECRET_KEY=yoursupersecretfixedkey12345!
+#Secret key is used to maintain user sessions. The default value is specified, but you must change it to your own random key.
+
 
 # Start the server
 python api.py

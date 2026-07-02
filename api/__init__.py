@@ -11,9 +11,10 @@ from flask import Blueprint
 
 from api.stream  import stream_bp
 from api.library import library_bp
-from api.opds    import opds_bp
-from api.admin   import admin_bp
-from api.auth    import auth_bp
+from api.opds     import opds_bp
+from api.app_opds import app_opds_bp
+from api.admin    import admin_bp
+from api.auth     import auth_bp
 
 # 통합 Blueprint (URL prefix 없음 – 각 모듈이 전체 경로를 직접 정의)
 api_bp = Blueprint('media_api', __name__)
@@ -22,5 +23,6 @@ api_bp = Blueprint('media_api', __name__)
 api_bp.register_blueprint(stream_bp)
 api_bp.register_blueprint(library_bp)
 api_bp.register_blueprint(opds_bp)
+api_bp.register_blueprint(app_opds_bp)  # 타치요미/미혼 전용 엔드포인트
 api_bp.register_blueprint(admin_bp)
 api_bp.register_blueprint(auth_bp)

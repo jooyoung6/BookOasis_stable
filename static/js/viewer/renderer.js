@@ -310,6 +310,9 @@ export function loadComicPage() {
       imgEl.loading = 'eager';
       imgEl.style.opacity = '0';
 
+      // onerror 중복 트리거 방지 플래그
+      let _errorFired = false;
+
       imgEl.onload = () => {
         loadedCount += 1;
         imageElements[index] = imgEl;
@@ -319,7 +322,7 @@ export function loadComicPage() {
             comicLoadingTimer = null;
           }
           pairContainer.innerHTML = '';
-          imageElements.forEach((loadedImg, loadedIndex) => {
+          imageElements.forEach((loadedImg) => {
             if (loadedImg) {
               loadedImg.style.opacity = '1';
               pairContainer.appendChild(loadedImg);
@@ -342,6 +345,8 @@ export function loadComicPage() {
       };
 
       imgEl.onerror = () => {
+        if (_errorFired) return; // Worker fallback 재시도 시 중복 onerror 방지
+        _errorFired = true;
         console.error(`[Viewer-Comic] Image load failed: page_idx=${pageIndex}`);
         if (comicLoadingTimer) {
           clearTimeout(comicLoadingTimer);
@@ -351,19 +356,20 @@ export function loadComicPage() {
         imgEl.style.opacity = '1';
       };
 
-      // Use worker-assisted fetch when possible
-      if (typeof Worker !== 'undefined') {
+      // Worker를 통해 fetch → ObjectURL로 img.src 설정 (세션 쿠키 포함은 image_worker.js 참조)
+      // Worker 실패 시 직접 URL fallback 시도
       const url = FileLoader.getPageStreamUrl(pageIndex);
-      fetchImageWithWorker(url).then(({ objectUrl }) => {
-        imgEl.src = objectUrl;
-        imgEl.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
-      }).catch(() => {
-        imgEl.src = url;
-      });
+      if (typeof Worker !== 'undefined') {
+        fetchImageWithWorker(url).then(({ objectUrl }) => {
+          imgEl.src = objectUrl;
+          imgEl.addEventListener('load', () => URL.revokeObjectURL(objectUrl), { once: true });
+        }).catch((err) => {
+          console.warn(`[Viewer-Comic] Worker fetch failed for page_idx=${pageIndex}, falling back to direct URL:`, err);
+          imgEl.src = url;
+        });
       } else {
-        imgEl.src = FileLoader.getPageStreamUrl(pageIndex);
+        imgEl.src = url;
       }
-      imageElements[index] = imgEl;
     });
 
     updatePageInfo();

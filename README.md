@@ -84,6 +84,8 @@ pip install -r requirements.txt
 # 설정 파일 구성
 cp .env.example .env
 # .env 파일 내 알라딘 TTBKey 등 필수 설정 입력
+nano SECRET_KEY=yoursupersecretfixedkey12345!
+#사용자 세션을 유지하기 위한 키 입니다. 기본값은 지정되어 있지만, 반드시 자신이 생성한 임의의 키로 변경하여 주시기 바랍니다.
 
 # 서버 기동
 python api.py

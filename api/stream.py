@@ -30,6 +30,11 @@ def stream_comic_page():
     if not book_id:
         return jsonify({'error': _t('api.err_book_id_required')}), 400
 
+    try:
+        book_id = int(book_id)
+    except (ValueError, TypeError):
+        return jsonify({'error': _t('api.err_book_id_required')}), 400
+
     file_path = StreamService.get_file_path(db_type, book_id)
     if not file_path:
         return jsonify({'error': _t('api.err_book_not_found')}), 404
