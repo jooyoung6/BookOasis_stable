@@ -11,10 +11,10 @@ services:
       - "5930:5930"
     volumes:
       # 설정 및 데이터베이스 영구 소장용 바인딩
-      - ./db:/app/db
-      - ./covers:/app/covers
-      - ./cache:/app/cache
-      - ./plugins:/app/plugins
+      - /volume1/docker/bookoasis/db:/app/db
+      - /volume1/docker/bookoasis/covers:/app/covers
+      - /volume1/docker/bookoasis/cache:/app/cache
+      - /volume1/docker/bookoasis/plugins:/app/plugins
       # 중요: 미디어 라이브러리 경로 마운트 (본인의 책 저장 경로로 우측 매핑 수정 가능)
       - /volume1/rclone/gds/GDRIVE/READING:/data/comics:ro
     env_file:
